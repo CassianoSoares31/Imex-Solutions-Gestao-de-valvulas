@@ -1,0 +1,157 @@
+:root {
+    --imex-dark: #1a2332;
+    --imex-primary: #0d6efd;
+    --imex-accent: #2d7be5;
+    --imex-bg: #f0f2f5;
+    --imex-card: #ffffff;
+    --imex-border: #dee2e6;
+    --imex-text: #212529;
+    --imex-text-muted: #6c757d;
+}
+
+* { font-family: 'Archivo', sans-serif; }
+
+body { background: var(--imex-bg); color: var(--imex-text); }
+
+.bg-dark-imex { background-color: var(--imex-dark) !important; }
+
+/* Stats Cards */
+.stat-card {
+    background: var(--imex-card);
+    border: none;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: transform 0.15s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card .stat-number { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-card .stat-label { font-size: 0.85rem; color: var(--imex-text-muted); margin-top: 0.25rem; }
+.stat-card.esfera { border-left: 4px solid #0d6efd; }
+.stat-card.gaveta { border-left: 4px solid #198754; }
+.stat-card.globo { border-left: 4px solid #fd7e14; }
+.stat-card.retencao { border-left: 4px solid #dc3545; }
+.stat-card.borboleta { border-left: 4px solid #6f42c1; }
+.stat-card.globo_controle { border-left: 4px solid #20c997; }
+.stat-card.total { border-left: 4px solid #495057; }
+
+/* Section Cards */
+.section-card {
+    background: var(--imex-card);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.section-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--imex-border);
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+/* Tab nav */
+.nav-tabs .nav-link {
+    color: var(--imex-text-muted);
+    font-weight: 500;
+    border: none;
+    padding: 0.75rem 1.25rem;
+}
+.nav-tabs .nav-link.active {
+    color: var(--imex-primary);
+    border-bottom: 2px solid var(--imex-primary);
+    background: transparent;
+}
+
+/* Form styling */
+.form-label { font-weight: 500; font-size: 0.875rem; color: #495057; }
+.form-select, .form-control {
+    border-radius: 8px;
+    border-color: var(--imex-border);
+    font-size: 0.875rem;
+}
+.form-select:focus, .form-control:focus {
+    border-color: var(--imex-accent);
+    box-shadow: 0 0 0 0.2rem rgba(45,123,229,0.15);
+}
+
+/* Table */
+.table-valvulas th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--imex-text-muted);
+    border-bottom-width: 1px;
+}
+.table-valvulas td { font-size: 0.875rem; vertical-align: middle; }
+
+/* Badge tipo */
+.badge-tipo {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: 6px;
+}
+.badge-esfera { background: #e7f1ff; color: #0d6efd; }
+.badge-gaveta { background: #e8f5e9; color: #198754; }
+.badge-globo { background: #fff3e0; color: #fd7e14; }
+.badge-retencao { background: #fce4ec; color: #dc3545; }
+.badge-borboleta { background: #f3e5f5; color: #6f42c1; }
+.badge-globo_controle { background: #e0f2f1; color: #20c997; }
+
+/* Action buttons */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+/* Code display */
+.codigo-display {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--imex-primary);
+}
+
+/* Field groups - hidden by default, shown via JS */
+.field-group { display: none; }
+.field-group.visible { display: block; }
+
+/* Material section */
+.material-section { border-top: 1px solid var(--imex-border); padding-top: 1rem; margin-top: 1rem; }
+
+/* Toast */
+.toast-container { z-index: 9999; }
+
+/* Detail modal */
+.detail-section { margin-bottom: 1.25rem; }
+.detail-section h6 { font-weight: 600; color: var(--imex-primary); margin-bottom: 0.5rem; font-size: 0.9rem; }
+.detail-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid #f0f2f5; font-size: 0.85rem; }
+.detail-row .detail-label { color: var(--imex-text-muted); }
+.detail-row .detail-value { font-weight: 500; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card .stat-number { font-size: 1.5rem; }
+}
+
+/* Scrollable form */
+.cadastro-scroll {
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+.cadastro-scroll::-webkit-scrollbar { width: 6px; }
+.cadastro-scroll::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+/* Alert success */
+.alert-codigo {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border-color: #66bb6a;
+    color: #2e7d32;
+}
+
+/* . */

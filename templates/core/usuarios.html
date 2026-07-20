@@ -1,0 +1,497 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Imex Solutions - Usuários{% endblock %}
+
+{% block extra_css %}
+<style>
+  .usuarios-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--imex-border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  
+  .usuarios-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--imex-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .usuarios-header > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  .usuarios-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--imex-navy);
+    margin: 0;
+  }
+  
+  .usuarios-count {
+    font-size: 0.78rem;
+    color: var(--imex-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  .search-box {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+  }
+  
+  .search-box input {
+    width: 100%;
+    padding: 0.4rem 0.75rem 0.4rem 2.2rem;
+    border: 1px solid var(--imex-border);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background: #f8f9fa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--imex-blue);
+    box-shadow: 0 0 0 2px rgba(26,86,219,0.12);
+    background: #fff;
+  }
+  
+  .search-box .search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--imex-muted);
+    font-size: 0.85rem;
+  }
+  
+  .usuarios-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #c5c5c5 transparent;
+  }
+  
+  .usuarios-table-wrapper::-webkit-scrollbar {
+    height: 7px;
+  }
+  
+  .usuarios-table-wrapper::-webkit-scrollbar-thumb {
+    background: #c5c5c5;
+    border-radius: 20px;
+  }
+  
+  .usuarios-table {
+    width: 100%;
+    min-width: 650px;
+    margin: 0;
+  }
+  
+  .usuarios-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--imex-muted);
+    border-bottom-width: 1px;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    white-space: nowrap;
+  }
+  
+  .usuarios-table td {
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+  }
+  
+  .usuarios-table td:nth-child(2) {
+    max-width: 220px;
+    white-space: normal;
+    word-break: break-word;
+  }
+  
+  .usuarios-table tr.is-self {
+    background: #f0f4ff;
+  }
+  
+  .usuarios-table tr.is-self td:first-child::after {
+    content: ' (você)';
+    font-size: 0.72rem;
+    color: var(--imex-blue);
+    font-weight: 600;
+  }
+  
+  .badge-permissao {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3em 0.65em;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  
+  .badge-especial {
+    background: #e8f0fe;
+    color: #1a56db;
+  }
+  
+  .badge-comum {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  .badge-confirmado {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .badge-pendente {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .acoes-usuario {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  
+  .btn-action {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  .btn-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--imex-muted);
+  }
+  
+  /* Responsividade para Tablets */
+  @media (max-width: 992px) {
+    .usuarios-header {
+      padding: 1rem;
+    }
+    
+    .usuarios-table td:nth-child(2) {
+      max-width: 180px;
+    }
+    
+    .usuarios-table th,
+    .usuarios-table td {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.8rem;
+    }
+  }
+  
+  /* Responsividade para Celulares */
+  @media (max-width: 768px) {
+    .usuarios-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 1rem;
+    }
+    
+    .usuarios-header > div {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    
+    .search-box {
+      max-width: none;
+      width: 100%;
+    }
+    
+    .usuarios-count {
+      text-align: center;
+    }
+    
+    .usuarios-table {
+      min-width: 600px;
+    }
+    
+    .usuarios-table td:nth-child(2) {
+      max-width: 150px;
+    }
+    
+    .usuarios-table th,
+    .usuarios-table td {
+      padding: 0.5rem;
+      font-size: 0.78rem;
+    }
+    
+    .btn-action {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+    }
+    
+    .acoes-usuario {
+      gap: 0.25rem;
+    }
+    
+    .badge-permissao {
+      font-size: 0.68rem;
+      padding: 0.25em 0.5em;
+    }
+    
+    .empty-state {
+      padding: 2rem 1rem;
+    }
+    
+    .usuarios-header h2 {
+      font-size: 1rem;
+      text-align: center;
+    }
+  }
+  
+  /* Ajustes para telas muito pequenas */
+  @media (max-width: 480px) {
+    .usuarios-card {
+      border-radius: 0;
+      margin: -1rem;
+    }
+    
+    .usuarios-table td:nth-child(2) {
+      max-width: 130px;
+    }
+    
+    .btn-action {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.4rem;
+    }
+    
+    .usuarios-table th,
+    .usuarios-table td {
+      padding: 0.4rem;
+      font-size: 0.75rem;
+    }
+    
+    .acoes-usuario {
+      gap: 0.2rem;
+    }
+  }
+
+  /* ── Dark Mode ── */
+  [data-bs-theme="dark"] .usuarios-card { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .usuarios-table th { background: var(--imex-surface-elevated); }
+  [data-bs-theme="dark"] .search-box input { background: var(--imex-surface-elevated); color: var(--imex-text); }
+  [data-bs-theme="dark"] .search-box input:focus { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .usuarios-table tr.is-self { background: var(--imex-brand-bg); }
+  [data-bs-theme="dark"] .badge-especial { background: #1d2c41; color: #8fb6e6; }
+  [data-bs-theme="dark"] .badge-comum { background: #2a313d; color: #aab4c2; }
+  [data-bs-theme="dark"] .badge-confirmado { background: #16301f; color: #6fc99a; }
+  [data-bs-theme="dark"] .badge-pendente { background: #2f2810; color: #e0bb4e; }
+  [data-bs-theme="dark"] .usuarios-header h2 { color: var(--imex-text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="usuarios-card">
+  <div class="usuarios-header">
+    <h2><i class="bi bi-people-fill me-2"></i>Gerenciamento de Usuários</h2>
+    <div>
+      <div class="search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="search-nome" placeholder="Pesquisar por nome..." autocomplete="off">
+      </div>
+      <span class="usuarios-count" id="user-count"></span>
+    </div>
+  </div>
+  <div id="usuarios-body">
+    <div class="empty-state">
+      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+      Carregando usuários...
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+let allUsuarios = [];
+let meuId = null;
+const USUARIOS_POR_PAGINA = 15;
+let _paginaAtual = 1;
+let _totalPaginasAtual = 1;
+let _totalGeral = 0;
+let _debounceTimer = null;
+
+async function loadUsuarios(pagina = 1) {
+  _paginaAtual = pagina;
+  const termo = document.getElementById('search-nome').value.trim();
+  const params = new URLSearchParams();
+  if (termo) params.set('q', termo);
+  params.set('page', pagina);
+  params.set('page_size', USUARIOS_POR_PAGINA);
+
+  try {
+    const resp = await fetch(`{% url "core:usuario_lista_api" %}?${params.toString()}`, {
+      headers: { 'X-CSRFToken': CSRF }
+    });
+    const result = await resp.json();
+    meuId = result.meu_id;
+    allUsuarios = result.usuarios;
+    _totalPaginasAtual = result.total_pages || 1;
+    _totalGeral = result.total || 0;
+    renderUsuarios();
+  } catch (err) {
+    document.getElementById('usuarios-body').innerHTML =
+      '<div class="empty-state text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar usuários</div>';
+  }
+}
+
+function renderUsuarios() {
+  const countEl = document.getElementById('user-count');
+  countEl.textContent = `${_totalGeral} usuário${_totalGeral !== 1 ? 's' : ''}`;
+
+  if (allUsuarios.length === 0) {
+    document.getElementById('usuarios-body').innerHTML =
+      '<div class="empty-state"><i class="bi bi-search" style="font-size:2rem;"></i><p class="mt-2">Nenhum usuário encontrado</p></div>';
+    return;
+  }
+
+  let html = `<div class="usuarios-table-wrapper">
+  <table class="table usuarios-table">
+    <thead><tr>
+      <th>Nome</th><th>Email</th><th>Permissão</th><th>Status</th><th style="text-align:right;">Ações</th>
+    </tr></thead><tbody>`;
+
+  allUsuarios.forEach(u => {
+    const isSelf = u.id === meuId;
+    const rowClass = isSelf ? 'is-self' : '';
+
+    const permBadge = u.nivel_permissao === 'ESPECIAL'
+      ? '<span class="badge-permissao badge-especial">Especial</span>'
+      : '<span class="badge-permissao badge-comum">Comum</span>';
+
+    const statusBadge = u.confirmado
+      ? '<span class="badge-permissao badge-confirmado">Confirmado</span>'
+      : '<span class="badge-permissao badge-pendente">Pendente</span>';
+
+    const togglePermBtn = u.nivel_permissao === 'COMUM'
+      ? `<button class="btn btn-outline-primary btn-action" onclick="alterarPermissao(${u.id}, 'ESPECIAL')" title="Promover a Especial" ${isSelf ? 'disabled' : ''}><i class="bi bi-shield-fill-plus me-1"></i>Promover</button>`
+      : `<button class="btn btn-outline-secondary btn-action" onclick="alterarPermissao(${u.id}, 'COMUM')" title="Rebaixar a Comum" ${isSelf ? 'disabled' : ''}><i class="bi bi-shield-fill-minus me-1"></i>Rebaixar</button>`;
+
+    const toggleConfBtn = u.confirmado
+      ? `<button class="btn btn-outline-warning btn-action" onclick="toggleConfirmado(${u.id})" title="Desconfirmar" ${isSelf ? 'disabled' : ''}><i class="bi bi-x-circle me-1"></i>Desconfirmar</button>`
+      : `<button class="btn btn-outline-success btn-action" onclick="toggleConfirmado(${u.id})" title="Confirmar" ${isSelf ? 'disabled' : ''}><i class="bi bi-check-circle me-1"></i>Confirmar</button>`;
+
+    html += `<tr class="${rowClass}">
+      <td class="fw-medium">${u.nome}</td>
+      <td class="text-muted">${u.email}</td>
+      <td>${permBadge}</td>
+      <td>${statusBadge}</td>
+      <td class="text-end"><div class="acoes-usuario">${togglePermBtn}${toggleConfBtn}</div></td>
+    </tr>`;
+  });
+
+  html += `
+    </tbody>
+  </table>
+</div>
+<nav class="mt-3"><ul class="pagination pagination-sm justify-content-center mb-0" id="usuarios-paginacao"></ul></nav>
+`;
+  document.getElementById('usuarios-body').innerHTML = html;
+  renderControlesPaginacaoUsuarios();
+}
+
+function irParaPaginaUsuarios(p) {
+  if (p < 1 || p > _totalPaginasAtual) return;
+  loadUsuarios(p);
+}
+
+function renderControlesPaginacaoUsuarios() {
+  const ul = document.getElementById('usuarios-paginacao');
+  if (!ul) return;
+  if (_totalPaginasAtual <= 1) { ul.innerHTML = ''; return; }
+
+  const item = (label, pagina, opts = {}) => {
+    const { disabled = false, active = false, aria = '' } = opts;
+    if (disabled || active) {
+      return `<li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+                <span class="page-link">${label}</span></li>`;
+    }
+    return `<li class="page-item"><a class="page-link" href="#" ${aria} onclick="irParaPaginaUsuarios(${pagina}); return false;">${label}</a></li>`;
+  };
+
+  const janela = [];
+  const ini = Math.max(1, _paginaAtual - 2);
+  const f = Math.min(_totalPaginasAtual, _paginaAtual + 2);
+  for (let i = ini; i <= f; i++) janela.push(i);
+
+  let html = '';
+  html += item('&laquo;', _paginaAtual - 1, { disabled: _paginaAtual === 1, aria: 'aria-label="Anterior"' });
+  if (ini > 1) {
+    html += item('1', 1);
+    if (ini > 2) html += item('…', 0, { disabled: true });
+  }
+  janela.forEach(p => { html += item(String(p), p, { active: p === _paginaAtual }); });
+  if (f < _totalPaginasAtual) {
+    if (f < _totalPaginasAtual - 1) html += item('…', 0, { disabled: true });
+    html += item(String(_totalPaginasAtual), _totalPaginasAtual);
+  }
+  html += item('&raquo;', _paginaAtual + 1, { disabled: _paginaAtual === _totalPaginasAtual, aria: 'aria-label="Próxima"' });
+  ul.innerHTML = html;
+}
+
+document.getElementById('search-nome').addEventListener('input', () => {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(() => loadUsuarios(1), 300);
+});
+
+async function alterarPermissao(id, nivel) {
+  try {
+    const resp = await fetch(`/api/usuarios/${id}/permissao/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ nivel_permissao: nivel })
+    });
+    const result = await resp.json();
+    if (result.success) loadUsuarios(_paginaAtual);
+    else alert(result.error || 'Erro ao alterar permissão');
+  } catch { alert('Erro de conexão'); }
+}
+
+async function toggleConfirmado(id) {
+  try {
+    const resp = await fetch(`/api/usuarios/${id}/confirmar/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+    });
+    const result = await resp.json();
+    if (result.success) loadUsuarios(_paginaAtual);
+    else alert(result.error || 'Erro ao alterar status');
+  } catch { alert('Erro de conexão'); }
+}
+
+loadUsuarios(1);
+</script>
+{% endblock %}
+<!-- . -->

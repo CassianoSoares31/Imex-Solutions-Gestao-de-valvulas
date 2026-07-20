@@ -1,0 +1,513 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Imex Solutions - Projetos{% endblock %}
+
+{% block extra_css %}
+<style>
+  .projetos-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--imex-border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .projetos-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--imex-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .projetos-header > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .projetos-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--imex-navy);
+    margin: 0;
+  }
+
+  .projetos-count {
+    font-size: 0.78rem;
+    color: var(--imex-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .projetos-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    position: relative;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 0.4rem 0.75rem 0.4rem 2.2rem;
+    border: 1px solid var(--imex-border);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background: #f8f9fa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--imex-blue);
+    box-shadow: 0 0 0 2px rgba(26,86,219,0.12);
+    background: #fff;
+  }
+
+  .search-box .search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--imex-muted);
+    font-size: 0.85rem;
+  }
+
+  .filter-select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--imex-border);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background: #f8f9fa;
+    min-width: 130px;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--imex-blue);
+    box-shadow: 0 0 0 2px rgba(26,86,219,0.12);
+    background: #fff;
+  }
+
+  .projetos-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #c5c5c5 transparent;
+  }
+
+  .projetos-table-wrapper::-webkit-scrollbar { height: 7px; }
+  .projetos-table-wrapper::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 20px; }
+
+  .projetos-table {
+    width: 100%;
+    min-width: 600px;
+    margin: 0;
+  }
+
+  .projetos-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--imex-muted);
+    border-bottom-width: 1px;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    white-space: nowrap;
+  }
+
+  .projetos-table td {
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+  }
+
+  .badge-status {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3em 0.65em;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .badge-ativo {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-concluido {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .valvulas-count {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--imex-navy);
+  }
+
+  .acoes-projeto {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .btn-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--imex-muted);
+  }
+
+  .btn-novo-projeto {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+  }
+
+  /* Responsividade */
+  @media (max-width: 992px) {
+    .projetos-header { padding: 1rem; }
+    .projetos-table th,
+    .projetos-table td { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
+  }
+
+  @media (max-width: 768px) {
+    .projetos-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 1rem;
+    }
+    .projetos-header > div {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .projetos-toolbar { flex-direction: column; align-items: stretch; }
+    .search-box { max-width: none; width: 100%; }
+    .filter-select { width: 100%; }
+    .projetos-count { text-align: center; }
+    .projetos-table { min-width: 550px; }
+    .projetos-table th,
+    .projetos-table td { padding: 0.5rem; font-size: 0.78rem; }
+    .btn-action { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+    .acoes-projeto { gap: 0.25rem; }
+    .projetos-header h2 { font-size: 1rem; text-align: center; }
+  }
+
+  @media (max-width: 480px) {
+    .projetos-card { border-radius: 0; margin: -1rem; }
+    .projetos-table th,
+    .projetos-table td { padding: 0.4rem; font-size: 0.75rem; }
+    .btn-action { font-size: 0.68rem; padding: 0.15rem 0.4rem; }
+    .acoes-projeto { gap: 0.2rem; }
+  }
+
+  /* Dark Mode */
+  [data-bs-theme="dark"] .projetos-card { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .projetos-table th { background: var(--imex-surface-elevated); }
+  [data-bs-theme="dark"] .search-box input { background: var(--imex-surface-elevated); color: var(--imex-text); }
+  [data-bs-theme="dark"] .search-box input:focus { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .filter-select { background: var(--imex-surface-elevated); color: var(--imex-text); }
+  [data-bs-theme="dark"] .filter-select:focus { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .badge-ativo { background: #16301f; color: #6fc99a; }
+  [data-bs-theme="dark"] .badge-concluido { background: #1e1b4b; color: #a5b4fc; }
+  [data-bs-theme="dark"] .projetos-header h2 { color: var(--imex-text); }
+  [data-bs-theme="dark"] .valvulas-count { color: var(--imex-text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="projetos-card">
+  <div class="projetos-header">
+    <div>
+      <h2><i class="bi bi-folder-fill me-2"></i>Gerenciamento de Projetos</h2>
+      <span class="projetos-count" id="proj-count"></span>
+    </div>
+    <div class="projetos-toolbar">
+      <div class="search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="search-projeto" placeholder="Pesquisar por nome..." autocomplete="off">
+      </div>
+      <select id="filter-status" class="filter-select">
+        <option value="">Todos</option>
+        <option value="ATIVO" selected>Ativos</option>
+        <option value="CONCLUIDO">Concluídos</option>
+      </select>
+      <button class="btn btn-imex-primary btn-novo-projeto" onclick="abrirNovoProjeto()">
+        <i class="bi bi-plus-circle me-1"></i>Novo Projeto
+      </button>
+    </div>
+  </div>
+  <div id="projetos-body">
+    <div class="empty-state">
+      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>
+      Carregando projetos...
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Projeto -->
+<div class="modal fade" id="modalNovoProjeto" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-folder-plus me-2"></i>Novo Projeto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-medium">Nome do Projeto</label>
+        <input type="text" id="novo-projeto-nome" class="form-control" placeholder="Nome do projeto..." maxlength="120" autofocus>
+        <div id="novo-projeto-erro" class="text-danger small mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-imex-primary" onclick="criarProjeto()">
+          <i class="bi bi-check-circle me-1"></i>Criar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Exclusão -->
+<div class="modal fade" id="modalExcluirProjeto" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Excluir Projeto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir o projeto <strong id="excluir-projeto-nome"></strong>?</p>
+        <p class="text-muted small mb-0" id="excluir-projeto-aviso"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirmar-exclusao">
+          <i class="bi bi-trash me-1"></i>Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+const API = {
+  lista: '{% url "core:projeto_lista_api" %}',
+  criar: '{% url "core:projeto_criar" %}',
+  status: id => `/api/projetos/${id}/status/`,
+  excluir: id => `/api/projetos/${id}/excluir/`,
+};
+
+let allProjetos = [];
+
+async function loadProjetos() {
+  try {
+    const status = document.getElementById('filter-status').value;
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    const resp = await fetch(`${API.lista}?${params.toString()}`);
+    const data = await resp.json();
+    allProjetos = data.projetos || [];
+    renderProjetos();
+  } catch (err) {
+    document.getElementById('projetos-body').innerHTML =
+      '<div class="empty-state text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar projetos</div>';
+  }
+}
+
+function renderProjetos() {
+  const termo = document.getElementById('search-projeto').value.toLowerCase().trim();
+  const filtrados = termo
+    ? allProjetos.filter(p => p.nome.toLowerCase().includes(termo))
+    : allProjetos;
+
+  const countEl = document.getElementById('proj-count');
+  const total = filtrados.length;
+  const totalGeral = allProjetos.length;
+  countEl.textContent = termo
+    ? `${total} de ${totalGeral} projeto${totalGeral !== 1 ? 's' : ''}`
+    : `${totalGeral} projeto${totalGeral !== 1 ? 's' : ''}`;
+
+  if (total === 0) {
+    document.getElementById('projetos-body').innerHTML =
+      '<div class="empty-state"><i class="bi bi-folder" style="font-size:2rem;"></i><p class="mt-2">Nenhum projeto encontrado</p></div>';
+    return;
+  }
+
+  let html = `<div class="projetos-table-wrapper">
+  <table class="table projetos-table">
+    <thead><tr>
+      <th>Nome</th><th>Status</th><th>Válvulas</th><th>Criado em</th><th style="text-align:right;">Ações</th>
+    </tr></thead><tbody>`;
+
+  filtrados.forEach(p => {
+    const statusBadge = p.status === 'ATIVO'
+      ? '<span class="badge-status badge-ativo"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem;vertical-align:middle;"></i>Ativo</span>'
+      : '<span class="badge-status badge-concluido"><i class="bi bi-check-circle-fill me-1" style="font-size:0.65rem;vertical-align:middle;"></i>Concluído</span>';
+
+    const novoStatus = p.status === 'ATIVO' ? 'CONCLUIDO' : 'ATIVO';
+    const toggleCls = p.status === 'ATIVO' ? 'btn-outline-primary' : 'btn-outline-success';
+    const toggleIcon = p.status === 'ATIVO' ? 'bi-check-circle' : 'bi-arrow-counterclockwise';
+    const toggleLabel = p.status === 'ATIVO' ? 'Concluir' : 'Reativar';
+
+    html += `<tr>
+      <td class="fw-medium">${escapeHtml(p.nome)}</td>
+      <td>${statusBadge}</td>
+      <td><span class="valvulas-count">${p.total_valvulas}</span></td>
+      <td class="text-muted">${escapeHtml(p.criado_em)}</td>
+      <td class="text-end"><div class="acoes-projeto">
+        <button class="btn ${toggleCls} btn-action js-status" data-id="${p.id}" data-status="${novoStatus}" title="${toggleLabel} projeto"><i class="bi ${toggleIcon} me-1"></i>${toggleLabel}</button>
+        <button class="btn btn-outline-danger btn-action js-excluir" data-id="${p.id}" data-nome="${escapeHtml(p.nome)}" data-valv="${p.total_valvulas}" title="Excluir projeto"><i class="bi bi-trash me-1"></i>Excluir</button>
+      </div></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('projetos-body').innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function alterarStatus(id, novoStatus) {
+  try {
+    const resp = await fetch(API.status(id), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ status: novoStatus }),
+    });
+    const result = await resp.json();
+    if (result.success) {
+      loadProjetos();
+    } else {
+      alert(result.error || 'Erro ao alterar status');
+    }
+  } catch { alert('Erro de conexão'); }
+}
+
+let excluirProjetoId = null;
+
+function confirmarExclusao(id, nome, totalValvulas) {
+  excluirProjetoId = id;
+  document.getElementById('excluir-projeto-nome').textContent = nome;
+  const aviso = totalValvulas > 0
+    ? `Este projeto possui ${totalValvulas} válvula${totalValvulas > 1 ? 's' : ''} associada${totalValvulas > 1 ? 's' : ''}. Elas não serão excluídas, apenas desvinculadas do projeto.`
+    : 'Este projeto não possui válvulas associadas.';
+  document.getElementById('excluir-projeto-aviso').textContent = aviso;
+  new bootstrap.Modal(document.getElementById('modalExcluirProjeto')).show();
+}
+
+document.getElementById('btn-confirmar-exclusao').addEventListener('click', async () => {
+  if (!excluirProjetoId) return;
+  try {
+    const resp = await fetch(API.excluir(excluirProjetoId), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    });
+    const result = await resp.json();
+    if (result.success) {
+      bootstrap.Modal.getInstance(document.getElementById('modalExcluirProjeto')).hide();
+      loadProjetos();
+    } else {
+      alert(result.error || 'Erro ao excluir projeto');
+    }
+  } catch { alert('Erro de conexão'); }
+});
+
+function abrirNovoProjeto() {
+  document.getElementById('novo-projeto-nome').value = '';
+  document.getElementById('novo-projeto-erro').style.display = 'none';
+  new bootstrap.Modal(document.getElementById('modalNovoProjeto')).show();
+  setTimeout(() => document.getElementById('novo-projeto-nome').focus(), 300);
+}
+
+async function criarProjeto() {
+  const nome = document.getElementById('novo-projeto-nome').value.trim();
+  const erroEl = document.getElementById('novo-projeto-erro');
+  if (!nome) {
+    erroEl.textContent = 'Nome é obrigatório';
+    erroEl.style.display = '';
+    return;
+  }
+  try {
+    const resp = await fetch(API.criar, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ nome }),
+    });
+    const result = await resp.json();
+    if (result.success) {
+      bootstrap.Modal.getInstance(document.getElementById('modalNovoProjeto')).hide();
+      loadProjetos();
+    } else {
+      erroEl.textContent = result.error || 'Erro ao criar projeto';
+      erroEl.style.display = '';
+    }
+  } catch {
+    erroEl.textContent = 'Erro de conexão';
+    erroEl.style.display = '';
+  }
+}
+
+document.getElementById('novo-projeto-nome').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); criarProjeto(); }
+});
+
+document.getElementById('search-projeto').addEventListener('input', renderProjetos);
+document.getElementById('filter-status').addEventListener('change', loadProjetos);
+
+document.getElementById('projetos-body').addEventListener('click', (e) => {
+  const btnStatus = e.target.closest('.js-status');
+  if (btnStatus) {
+    alterarStatus(parseInt(btnStatus.dataset.id), btnStatus.dataset.status);
+    return;
+  }
+  const btnExcluir = e.target.closest('.js-excluir');
+  if (btnExcluir) {
+    confirmarExclusao(parseInt(btnExcluir.dataset.id), btnExcluir.dataset.nome, parseInt(btnExcluir.dataset.valv));
+  }
+});
+
+loadProjetos();
+</script>
+{% endblock %}
+
+<!-- . -->

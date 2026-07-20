@@ -1,0 +1,515 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Imex Solutions - Estatísticas{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stats-wrap { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .stats-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--imex-border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .stats-card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--imex-border);
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .stats-card-header h2 {
+    font-size: 1rem; font-weight: 700; color: var(--imex-navy); margin: 0;
+  }
+  .stats-card-body { padding: 1.25rem; }
+
+  /* ── Filtros ── */
+  .stats-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+  .stats-filtros .campo { display: flex; flex-direction: column; gap: 0.25rem; }
+  .stats-filtros label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--imex-muted);
+  }
+  .stats-filtros select, .stats-filtros input {
+    padding: 0.4rem 0.7rem; border: 1px solid var(--imex-border);
+    border-radius: var(--radius-md); font-size: 0.82rem; background: #f8f9fa;
+    min-width: 150px;
+  }
+  .stats-filtros select:focus, .stats-filtros input:focus {
+    outline: none; border-color: var(--imex-blue);
+    box-shadow: 0 0 0 2px rgba(26,86,219,0.12); background: #fff;
+  }
+
+  /* ── Cards contadores ── */
+  .kpi-grid {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .kpi {
+    background: #fff; border: 1px solid var(--imex-border);
+    border-radius: var(--radius-lg); padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .kpi .kpi-label {
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--imex-muted);
+  }
+  .kpi .kpi-val { font-size: 1.7rem; font-weight: 800; color: var(--imex-navy); line-height: 1; }
+  .kpi .kpi-sub { font-size: 0.75rem; color: var(--imex-muted); }
+  .kpi.accent .kpi-val { color: var(--imex-blue); }
+
+  /* ── Charts ── */
+  .charts-grid {
+    display: grid; gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  }
+  .chart-box { min-height: 300px; position: relative; }
+  .chart-box canvas { max-height: 320px; }
+
+  /* ── Seções abaixo dos gráficos ── */
+  .tbl-grid {
+    display: grid; gap: 1.5rem 1.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .sub-block { display: flex; flex-direction: column; }
+  .sub-h {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--imex-text-secondary); margin-bottom: 0.65rem;
+    padding-bottom: 0.4rem; border-bottom: 1px solid var(--imex-border-light);
+  }
+  .sub-n {
+    font-size: 0.7rem; font-weight: 700; color: var(--imex-brand);
+    background: rgba(44,90,160,0.12); border-radius: 20px; padding: 0.05rem 0.55rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Lista de ranking — barra proporcional ao fundo da linha */
+  .rank-list { display: flex; flex-direction: column; gap: 3px; }
+  .rank-row {
+    position: relative; display: flex; align-items: center; justify-content: space-between;
+    gap: 0.75rem; padding: 0.42rem 0.6rem; border-radius: var(--radius-sm);
+    overflow: hidden; font-size: 0.82rem;
+  }
+  .rank-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; z-index: 0;
+    background: var(--imex-brand); opacity: 0.12; border-radius: var(--radius-sm);
+    transition: width var(--transition-base), opacity var(--transition-fast);
+  }
+  .rank-main {
+    position: relative; z-index: 1; min-width: 0;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .rank-crown { flex: none; font-size: 0.9rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15)); }
+  .rank-label {
+    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--imex-text);
+  }
+  .rank-row.is-king .rank-label { font-weight: 700; }
+  .rank-row.is-king .rank-fill { opacity: 0.2; }
+  .rank-val {
+    position: relative; z-index: 1; font-weight: 700; color: var(--imex-navy);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .rank-row:hover .rank-fill { opacity: 0.22; }
+
+  .muted-empty { color: var(--imex-text-muted); font-size: 0.82rem; padding: 0.5rem 0; }
+
+  /* Distribuição de tipos por projeto */
+  .dist-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .dist-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.65rem;
+    padding: 0.55rem 0.7rem; border: 1px solid var(--imex-border-light);
+    border-radius: var(--radius-md); background: var(--imex-bg);
+  }
+  .dist-nome { font-weight: 700; font-size: 0.82rem; color: var(--imex-navy); margin-right: 0.25rem; }
+  .dist-chip {
+    font-size: 0.72rem; padding: 0.12rem 0.55rem; border-radius: 20px; white-space: nowrap;
+    background: var(--imex-surface); border: 1px solid var(--imex-border); color: var(--imex-text-secondary);
+  }
+  .dist-chip b { color: var(--imex-navy); font-variant-numeric: tabular-nums; }
+
+  /* Comparativo */
+  .cmp-grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 600px) { .cmp-grid { grid-template-columns: 1fr; } }
+  .cmp-panel { border: 1px solid var(--imex-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .cmp-top { padding: 0.85rem 1rem; border-bottom: 1px solid var(--imex-border); background: var(--imex-bg); }
+  .cmp-nome { font-weight: 700; font-size: 0.9rem; color: var(--imex-navy); }
+  .cmp-big { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--imex-brand); margin-top: 0.15rem; font-variant-numeric: tabular-nums; }
+  .cmp-nbr { font-size: 0.75rem; color: var(--imex-text-muted); margin-top: 0.2rem; }
+  .cmp-rows { padding: 0.6rem; }
+
+  /* ── Dark mode ── */
+  [data-bs-theme="dark"] .stats-card,
+  [data-bs-theme="dark"] .kpi { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .stats-card-header h2,
+  [data-bs-theme="dark"] .kpi .kpi-val { color: var(--imex-text); }
+  [data-bs-theme="dark"] .kpi.accent .kpi-val { color: var(--imex-brand-light); }
+  [data-bs-theme="dark"] .stats-filtros select,
+  [data-bs-theme="dark"] .stats-filtros input { background: var(--imex-surface-elevated); color: var(--imex-text); }
+  [data-bs-theme="dark"] .rank-val,
+  [data-bs-theme="dark"] .dist-nome,
+  [data-bs-theme="dark"] .cmp-nome { color: var(--imex-text); }
+  [data-bs-theme="dark"] .cmp-big { color: var(--imex-brand-light); }
+  [data-bs-theme="dark"] .dist-row { background: var(--imex-surface-elevated); }
+  [data-bs-theme="dark"] .dist-chip { background: var(--imex-surface); }
+  [data-bs-theme="dark"] .dist-chip b { color: var(--imex-text); }
+  [data-bs-theme="dark"] .cmp-top { background: var(--imex-surface-elevated); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-wrap">
+
+  <!-- Filtros -->
+  <div class="stats-card">
+    <div class="stats-card-header">
+      <h2><i class="bi bi-funnel-fill me-1"></i>Filtros</h2>
+    </div>
+    <div class="stats-card-body">
+      <div class="stats-filtros">
+        <div class="campo">
+          <label for="f-projeto">Projeto</label>
+          <select id="f-projeto"><option value="">Todos</option></select>
+        </div>
+        <div class="campo">
+          <label for="f-tipo">Tipo</label>
+          <select id="f-tipo"><option value="">Todos</option></select>
+        </div>
+        <div class="campo">
+          <label for="f-ini">De</label>
+          <input type="date" id="f-ini">
+        </div>
+        <div class="campo">
+          <label for="f-fim">Até</label>
+          <input type="date" id="f-fim">
+        </div>
+        <div class="campo">
+          <button class="btn btn-outline-secondary btn-sm" id="f-reset">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Limpar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpis"></div>
+
+  <!-- Gráficos -->
+  <div class="stats-card">
+    <div class="stats-card-header"><h2><i class="bi bi-graph-up me-1"></i>Gráficos</h2></div>
+    <div class="stats-card-body">
+      <div class="charts-grid">
+        <div class="chart-box"><h6 class="text-muted small mb-2">Distribuição por tipo</h6><canvas id="ch-pizza"></canvas></div>
+        <div class="chart-box"><h6 class="text-muted small mb-2">Criadas por mês (12 meses)</h6><canvas id="ch-barras"></canvas></div>
+        <div class="chart-box"><h6 class="text-muted small mb-2">Por mês e tipo (empilhado)</h6><canvas id="ch-empilhado"></canvas></div>
+        <div class="chart-box"><h6 class="text-muted small mb-2">Tendência acumulada</h6><canvas id="ch-linha"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Por especificação -->
+  <div class="stats-card">
+    <div class="stats-card-header"><h2><i class="bi bi-sliders me-1"></i>Por Especificação Técnica</h2></div>
+    <div class="stats-card-body">
+      <div class="tbl-grid">
+        <div id="spec-diametros"></div>
+        <div id="spec-classes"></div>
+        <div id="spec-extremidades"></div>
+        <div id="spec-normas"></div>
+        <div id="spec-materiais"></div>
+        <div id="spec-combinacoes"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Por projeto -->
+  <div class="stats-card">
+    <div class="stats-card-header"><h2><i class="bi bi-folder-fill me-1"></i>Por Projeto</h2></div>
+    <div class="stats-card-body">
+      <div class="tbl-grid">
+        <div id="proj-ranking"></div>
+        <div id="proj-orfaos"></div>
+      </div>
+      <div class="mt-3" id="proj-distribuicao"></div>
+    </div>
+  </div>
+
+  <!-- Por usuário -->
+  <div class="stats-card">
+    <div class="stats-card-header"><h2><i class="bi bi-person-fill me-1"></i>Por Usuário</h2></div>
+    <div class="stats-card-body">
+      <div class="tbl-grid">
+        <div id="user-ranking"></div>
+        <div id="user-mes"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparativo -->
+  <div class="stats-card">
+    <div class="stats-card-header"><h2><i class="bi bi-bar-chart-steps me-1"></i>Comparativo de Projetos</h2></div>
+    <div class="stats-card-body">
+      <div class="stats-filtros mb-3">
+        <div class="campo">
+          <label for="c-a">Projeto A</label>
+          <select id="c-a"><option value="">Selecione…</option></select>
+        </div>
+        <div class="campo">
+          <label for="c-b">Projeto B</label>
+          <select id="c-b"><option value="">Selecione…</option></select>
+        </div>
+      </div>
+      <div id="cmp-resultado"><div class="muted-empty">Selecione dois projetos para comparar.</div></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+        crossorigin="anonymous"></script>
+<script>
+const CSRF = '{{ csrf_token }}';
+const PALETTE = ['#1a56db','#16a34a','#ea580c','#9333ea','#0891b2','#dc2626','#ca8a04','#0d9488'];
+const charts = {};   // instâncias Chart por id
+let OPCOES = null;    // projetos/tipos (preenchido na 1ª carga)
+let ULTIMO = null;    // último payload (p/ re-render ao trocar tema)
+
+// Ajusta cores globais do Chart.js conforme tema claro/escuro
+function aplicarTemaCharts(){
+  const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  Chart.defaults.color = dark ? '#cbd5e1' : '#666';
+  Chart.defaults.borderColor = dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)';
+}
+
+// Re-renderiza gráficos quando o tema muda (grid/legendas precisam de novas cores)
+new MutationObserver(()=>{ if(ULTIMO) renderCharts(ULTIMO); })
+  .observe(document.documentElement, { attributes:true, attributeFilter:['data-bs-theme'] });
+
+function esc(s){ const d=document.createElement('div'); d.textContent = s==null?'':String(s); return d.innerHTML; }
+
+function qs(){
+  const p = new URLSearchParams();
+  const projeto = document.getElementById('f-projeto').value;
+  const tipo = document.getElementById('f-tipo').value;
+  const ini = document.getElementById('f-ini').value;
+  const fim = document.getElementById('f-fim').value;
+  const ca = document.getElementById('c-a').value;
+  const cb = document.getElementById('c-b').value;
+  if (projeto) p.set('projeto', projeto);
+  if (tipo) p.set('tipo', tipo);
+  if (ini) p.set('data_inicio', ini);
+  if (fim) p.set('data_fim', fim);
+  if (ca) p.set('projeto_a', ca);
+  if (cb) p.set('projeto_b', cb);
+  return p.toString();
+}
+
+async function carregar(){
+  try{
+    const resp = await fetch('/api/estatisticas/?' + qs(), { headers: { 'X-CSRFToken': CSRF } });
+    if(!resp.ok){ throw new Error('HTTP '+resp.status); }
+    const d = await resp.json();
+    if(!OPCOES){ OPCOES = d.opcoes; preencherSelects(); }
+    render(d);
+  }catch(err){
+    document.getElementById('kpis').innerHTML =
+      '<div class="muted-empty text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Erro ao carregar estatísticas</div>';
+  }
+}
+
+function preencherSelects(){
+  const projOpts = OPCOES.projetos.map(p => `<option value="${p.id_projeto}">${esc(p.nome)}</option>`).join('');
+  document.getElementById('f-projeto').insertAdjacentHTML('beforeend', projOpts);
+  document.getElementById('c-a').insertAdjacentHTML('beforeend', projOpts);
+  document.getElementById('c-b').insertAdjacentHTML('beforeend', projOpts);
+  const tipoOpts = OPCOES.tipos.map(t => `<option value="${t.key}">${esc(t.label)}</option>`).join('');
+  document.getElementById('f-tipo').insertAdjacentHTML('beforeend', tipoOpts);
+}
+
+function render(d){
+  renderKpis(d.contadores);
+  renderCharts(d);
+  renderSpec(d.por_spec);
+  renderProjeto(d.por_projeto);
+  renderUsuario(d.por_usuario);
+  renderComparativo(d.comparativo);
+}
+
+function renderKpis(c){
+  const items = [
+    {label:'Total de Válvulas', val:c.total_valvulas, sub:'todas'},
+    {label:'Criadas no Mês', val:c.criadas_mes},
+    {label:'Criadas no Ano', val:c.criadas_ano},
+    {label:'Projetos Ativos', val:c.projetos_ativos, sub:`de ${c.total_projetos} projetos`, accent:true},
+    {label:'Materiais', val:c.total_materiais},
+    {label:'% com NBR 15827', val:c.nbr_pct + '%', sub:`${c.nbr_sim} sim · ${c.nbr_nao} não`, accent:true},
+    {label:'Duplicatas', val:c.duplicatas, sub:'tentativas barradas'},
+  ];
+  document.getElementById('kpis').innerHTML = items.map(i => `
+    <div class="kpi ${i.accent?'accent':''}">
+      <span class="kpi-label">${esc(i.label)}</span>
+      <span class="kpi-val">${esc(i.val)}</span>
+      ${i.sub?`<span class="kpi-sub">${esc(i.sub)}</span>`:''}
+    </div>`).join('');
+}
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function renderCharts(d){
+  ULTIMO = d;
+  aplicarTemaCharts();
+  const c = d.contadores, s = d.series;
+
+  // Pizza por tipo
+  destroyChart('ch-pizza');
+  charts['ch-pizza'] = new Chart(document.getElementById('ch-pizza'), {
+    type:'doughnut',
+    data:{ labels:c.por_tipo.map(t=>t.tipo),
+      datasets:[{ data:c.por_tipo.map(t=>t.total), backgroundColor:PALETTE }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } }
+  });
+
+  // Barras 12 meses
+  destroyChart('ch-barras');
+  charts['ch-barras'] = new Chart(document.getElementById('ch-barras'), {
+    type:'bar',
+    data:{ labels:s.meses_labels,
+      datasets:[{ label:'Válvulas', data:s.serie_mensal, backgroundColor:'#1a56db' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  // Empilhado por tipo
+  destroyChart('ch-empilhado');
+  const tiposKeys = Object.keys(s.empilhado);
+  charts['ch-empilhado'] = new Chart(document.getElementById('ch-empilhado'), {
+    type:'bar',
+    data:{ labels:s.meses_labels,
+      datasets: tiposKeys.map((t,i)=>({ label:s.tipos_labels[t]||t, data:s.empilhado[t],
+        backgroundColor:PALETTE[i%PALETTE.length] })) },
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+
+  // Linha acumulada
+  destroyChart('ch-linha');
+  charts['ch-linha'] = new Chart(document.getElementById('ch-linha'), {
+    type:'line',
+    data:{ labels:s.meses_labels,
+      datasets:[{ label:'Acumulado', data:s.acumulado, borderColor:'#9333ea',
+        backgroundColor:'rgba(147,51,234,0.12)', fill:true, tension:0.3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+}
+
+// Lista de ranking — barra proporcional ao fundo. rows = [{label|nome, total}]
+// crownTop: coroa quem tiver o maior total (líder; empates recebem todos).
+function rankList(rows, keyLabel, crownTop){
+  if(!rows || !rows.length) return `<div class="muted-empty">Sem dados.</div>`;
+  const max = Math.max(...rows.map(r=>r.total)) || 1;
+  const body = rows.map(r=>{
+    const lbl = keyLabel && r[keyLabel] != null ? r[keyLabel] : (r.label != null ? r.label : r.nome);
+    const w = Math.round((r.total/max)*100);
+    const rei = crownTop && r.total === max && max > 0;
+    const coroa = rei ? `<span class="rank-crown" aria-label="líder">👑</span>` : '';
+    return `<div class="rank-row${rei ? ' is-king' : ''}">
+      <span class="rank-fill" style="width:${w}%"></span>
+      <span class="rank-main">${coroa}<span class="rank-label">${esc(lbl)}</span></span>
+      <span class="rank-val">${esc(r.total)}</span>
+    </div>`;
+  }).join('');
+  return `<div class="rank-list">${body}</div>`;
+}
+
+// Bloco com título + contador opcional
+function subBlock(titulo, n, inner){
+  const badge = (n != null) ? `<span class="sub-n">${String(n).padStart(2,'0')}</span>` : '';
+  return `<div class="sub-block"><div class="sub-h"><span>${esc(titulo)}</span>${badge}</div>${inner}</div>`;
+}
+
+function renderSpec(sp){
+  const put = (id, titulo, rows) =>
+    document.getElementById(id).innerHTML = subBlock(titulo, rows ? rows.length : 0, rankList(rows));
+  put('spec-diametros',    'Diâmetros mais usados', sp.diametros);
+  put('spec-classes',      'Classes mais usadas', sp.classes);
+  put('spec-extremidades', 'Extremidades', sp.extremidades);
+  put('spec-normas',       'Normas aplicadas', sp.normas);
+  put('spec-materiais',    'Material do corpo', sp.materiais_corpo);
+  put('spec-combinacoes',  'Tipo + classe + diâmetro', sp.combinacoes);
+}
+
+function renderProjeto(p){
+  document.getElementById('proj-ranking').innerHTML =
+    subBlock('Ranking — mais válvulas', p.ranking.length, rankList(p.ranking, 'nome'));
+
+  const orf = p.orfaos || [];
+  let orfInner;
+  if(orf.length){
+    orfInner = `<div class="rank-list">` +
+      orf.map(n=>`<div class="rank-row"><span class="rank-label">${esc(n)}</span></div>`).join('') + `</div>`;
+  } else {
+    orfInner = `<div class="muted-empty">Nenhum projeto órfão.</div>`;
+  }
+  if(p.sem_projeto){
+    orfInner += `<div class="muted-empty">${p.sem_projeto} válvula(s) sem projeto.</div>`;
+  }
+  document.getElementById('proj-orfaos').innerHTML = subBlock('Projetos órfãos', orf.length, orfInner);
+
+  const nomes = Object.keys(p.distribuicao || {});
+  let distInner;
+  if(nomes.length){
+    distInner = `<div class="dist-list">` + nomes.map(nome=>{
+      const tipos = p.distribuicao[nome];
+      const chips = Object.keys(tipos).map(t=>`<span class="dist-chip">${esc(t)} <b>${tipos[t]}</b></span>`).join('');
+      return `<div class="dist-row"><span class="dist-nome">${esc(nome)}</span>${chips}</div>`;
+    }).join('') + `</div>`;
+  } else {
+    distInner = `<div class="muted-empty">Sem dados.</div>`;
+  }
+  document.getElementById('proj-distribuicao').innerHTML =
+    subBlock('Distribuição de tipos por projeto', nomes.length, distInner);
+}
+
+function renderUsuario(u){
+  document.getElementById('user-ranking').innerHTML =
+    subBlock('Quem mais cadastrou', u.ranking.length, rankList(u.ranking, 'nome', true));
+  document.getElementById('user-mes').innerHTML =
+    subBlock('Cadastros no mês', u.mes.length, rankList(u.mes, 'nome', true));
+}
+
+function renderComparativo(cmp){
+  const el = document.getElementById('cmp-resultado');
+  if(!cmp){ el.innerHTML = `<div class="muted-empty">Selecione dois projetos para comparar.</div>`; return; }
+  const panel = (b)=>`
+    <div class="cmp-panel">
+      <div class="cmp-top">
+        <div class="cmp-nome">${esc(b.nome)}</div>
+        <div class="cmp-big">${b.total}</div>
+        <div class="cmp-nbr">NBR 15827: ${b.nbr_pct}% (${b.nbr_sim}/${b.total})</div>
+      </div>
+      <div class="cmp-rows">${rankList(b.por_tipo, 'tipo')}</div>
+    </div>`;
+  el.innerHTML = `<div class="cmp-grid">${panel(cmp.a)}${panel(cmp.b)}</div>`;
+}
+
+// Eventos
+['f-projeto','f-tipo','f-ini','f-fim','c-a','c-b'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', carregar);
+});
+document.getElementById('f-reset').addEventListener('click', ()=>{
+  ['f-projeto','f-tipo','f-ini','f-fim'].forEach(id=>{ document.getElementById(id).value=''; });
+  carregar();
+});
+
+carregar();
+</script>
+{% endblock %}
+
+<!-- . -->

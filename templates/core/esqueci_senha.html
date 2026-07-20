@@ -1,0 +1,391 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imex Solutions - Esqueci minha senha</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/auth.css' %}" rel="stylesheet">
+  <style>
+    /* Estilos mínimos inline para garantir que os overlays funcionem */
+    .auth-progress-overlay,
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .auth-progress-overlay.is-visible,
+    .success-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .auth-progress-card,
+    .success-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+    
+    .auth-progress-step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .auth-progress-text {
+      text-align: left;
+    }
+    
+    .auth-progress-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      transition: all 0.3s ease;
+    }
+    
+    .is-active .auth-progress-icon {
+      background: #007bff;
+      color: white;
+    }
+    
+    .is-done .auth-progress-icon {
+      background: #28a745;
+      color: white;
+    }
+    
+    .auth-progress-spinner {
+      display: none;
+    }
+    
+    .is-active .auth-progress-spinner {
+      display: block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    
+    .auth-progress-check {
+      display: none;
+      width: 20px;
+      height: 20px;
+      stroke: white;
+      fill: none;
+      stroke-width: 3;
+    }
+    
+    .is-done .auth-progress-check {
+      display: block;
+    }
+    
+    .is-done .auth-progress-spinner,
+    .is-active .auth-progress-check {
+      display: none;
+    }
+    
+    .success-circle {
+      margin-bottom: 20px;
+    }
+    
+    .success-circle svg {
+      width: 80px;
+      height: 80px;
+    }
+    
+    .success-circle-bg {
+      fill: none;
+      stroke: #28a745;
+      stroke-width: 3;
+      stroke-dasharray: 166;
+      stroke-dashoffset: 166;
+      animation: draw-circle 0.6s ease forwards;
+    }
+    
+    .success-check {
+      fill: none;
+      stroke: #28a745;
+      stroke-width: 3;
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      animation: draw-check 0.4s 0.6s ease forwards;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes draw-circle {
+      to { stroke-dashoffset: 0; }
+    }
+    
+    @keyframes draw-check {
+      to { stroke-dashoffset: 0; }
+    }
+  </style>
+</head>
+<body class="auth-body">
+
+  <div class="auth-container">
+
+    <!-- LADO ESQUERDO — Explicação do projeto -->
+    <div class="auth-info">
+      <div class="auth-info-content">
+        <img src="{% static 'assets/logo.png' %}" alt="Imex Solutions" class="auth-logo">
+        <h1 class="auth-info-title">Gestão de Válvulas</h1>
+        <p class="auth-info-subtitle">Plataforma profissional para cadastro, consulta e gestão de especificações técnicas de válvulas industriais.</p>
+
+        <div class="auth-features">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div>
+              <div class="auth-feature-title">6 Tipos de Válvulas</div>
+              <div class="auth-feature-desc">Esfera, Gaveta, Globo, Retenção, Borboleta e Controle</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+            <div>
+              <div class="auth-feature-title">Folha de Dados em PDF</div>
+              <div class="auth-feature-desc">Geração automática de fichas técnicas padronizadas</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-search"></i></div>
+            <div>
+              <div class="auth-feature-title">Pesquisa Avançada</div>
+              <div class="auth-feature-desc">Filtros por tipo, material, classe, diâmetro e norma</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <div class="auth-feature-title">Normas e Certificações</div>
+              <div class="auth-feature-desc">NBR 15827, API, ASME, NACE, SIL e DBB/DIB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-info-footer">
+        <span>Imex Solutions &copy; 2026</span>
+      </div>
+    </div>
+
+    <!-- LADO DIREITO — Formulário -->
+    <div class="auth-form-side">
+
+      <form id="forgot-form" class="auth-form active" method="POST" action="">
+        {% csrf_token %}
+        <div class="auth-form-header">
+          <h2>Recuperar senha</h2>
+          <p>Informe o e-mail cadastrado para receber instruções de redefinição.</p>
+        </div>
+
+        <div class="auth-field">
+          <label for="forgot-email" class="auth-label">E-mail</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-envelope"></i>
+            <input type="email" id="forgot-email" name="email" placeholder="seu@email.com" required>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-btn-primary" id="btn-forgot">Enviar instruções</button>
+
+        <div class="auth-footer">
+          <a href="{% url 'core:auth_page' %}" class="auth-switch-link" data-goto="login">Lembrou a senha? Faça login</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ── Overlay de progresso: envio de e-mail ───────── -->
+  <div id="auth-progress-overlay" class="auth-progress-overlay" aria-hidden="true">
+    <div class="auth-progress-card">
+
+      <div class="auth-progress-step" id="step-send">
+        <div class="auth-progress-icon">
+          <span class="auth-progress-spinner"></span>
+          <svg class="auth-progress-check" viewBox="0 0 24 24">
+            <polyline points="4,13 9,18 20,5"></polyline>
+          </svg>
+        </div>
+        <div class="auth-progress-text">
+          <span class="auth-progress-label">Enviando instruções</span>
+          <span class="auth-progress-sublabel">Preparando o e-mail de recuperação...</span>
+        </div>
+      </div>
+
+      <p class="auth-progress-message" id="auth-progress-message"></p>
+    </div>
+  </div>
+
+  <!-- ── Overlay de sucesso ───────── -->
+  <div id="success-overlay" class="success-overlay">
+    <div class="success-card">
+      <div class="success-circle">
+        <svg viewBox="0 0 52 52">
+          <circle class="success-circle-bg" cx="26" cy="26" r="25"/>
+          <path class="success-check" d="M14 27 L22 35 L38 18"/>
+        </svg>
+      </div>
+
+      <h2 id="success-title">Sucesso!</h2>
+      <p id="success-text">Operação realizada com sucesso.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ── Overlay de progresso ────────────────────────────────────────────
+    const progressOverlay = document.getElementById('auth-progress-overlay');
+    const stepSend = document.getElementById('step-send');
+    const progressMessage = document.getElementById('auth-progress-message');
+
+    function setStepState(stepEl, state) {
+      // state: 'pending' | 'active' | 'done' | 'error'
+      stepEl.classList.remove('is-active', 'is-done', 'is-error');
+      if (state !== 'pending') stepEl.classList.add('is-' + state);
+    }
+
+    function showProgressOverlay() {
+      setStepState(stepSend, 'active');
+      progressMessage.textContent = '';
+      progressMessage.classList.remove('is-error');
+      progressOverlay.classList.add('is-visible');
+      progressOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideProgressOverlay(delay = 0) {
+      setTimeout(() => {
+        progressOverlay.classList.remove('is-visible');
+        progressOverlay.setAttribute('aria-hidden', 'true');
+      }, delay);
+    }
+
+    // ── Função para mostrar overlay de sucesso ─────────────────────────
+    function showSuccess(title, text, callback) {
+      document.getElementById("success-title").textContent = title;
+      document.getElementById("success-text").textContent = text;
+
+      const overlay = document.getElementById("success-overlay");
+      overlay.classList.add("show");
+
+      setTimeout(() => {
+        if (callback) {
+          callback();
+        }
+      }, 1700);
+    }
+
+    // ── Função para mostrar feedback no form ───────────────────────────
+    function showAuthMessage(form, type, message) {
+      let box = form.querySelector('.auth-message');
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'auth-message';
+        form.prepend(box);
+      }
+      box.className = `auth-message auth-message-${type}`;
+      box.textContent = message;
+      box.style.display = 'block';
+    }
+
+    function clearAuthMessages(form) {
+      const box = form.querySelector('.auth-message');
+      if (box) box.style.display = 'none';
+    }
+
+    // ── Forgot password via AJAX ───────────────────────────────────────
+    document.getElementById('forgot-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAuthMessages(this);
+
+      const btnForgot = document.getElementById('btn-forgot');
+      btnForgot.disabled = true;
+      showProgressOverlay();
+
+      const data = {
+        email: document.getElementById('forgot-email').value,
+      };
+
+      try {
+        const resp = await fetch('/api/esqueci-senha/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await resp.json();
+
+        if (result.success) {
+          setStepState(stepSend, 'done');
+
+          setTimeout(() => {
+            hideProgressOverlay();
+            showSuccess(
+              "E-mail enviado!",
+              result.message || "Verifique sua caixa de entrada para redefinir sua senha.",
+              () => {
+                // Redireciona para a página de login após o sucesso
+                window.location.href = "{% url 'core:auth_page' %}";
+              }
+            );
+          }, 600);
+        } else {
+          btnForgot.disabled = false;
+          hideProgressOverlay();
+
+          let msg = 'Ocorreu um erro inesperado';
+          if (result.errors && typeof result.errors === 'object') {
+            msg = Object.values(result.errors).flat().join(' ');
+          } else if (result.message) {
+            msg = result.message;
+          } else if (result.error) {
+            msg = result.error;
+          }
+          showAuthMessage(this, 'error', msg);
+        }
+      } catch (err) {
+        btnForgot.disabled = false;
+        hideProgressOverlay();
+        showAuthMessage(this, 'error', 'Erro de conexão. Tente novamente.');
+      }
+    });
+  </script>
+</body>
+</html>
+<!-- . -->

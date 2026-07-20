@@ -1,0 +1,465 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imex Solutions - Acesso</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/auth.css' %}" rel="stylesheet">
+</head>
+<body class="auth-body">
+
+  <div class="auth-frame" aria-hidden="true">
+    <span class="auth-frame__tick auth-frame__tick--tl"></span>
+    <span class="auth-frame__tick auth-frame__tick--tr"></span>
+    <span class="auth-frame__tick auth-frame__tick--bl"></span>
+    <span class="auth-frame__tick auth-frame__tick--br"></span>
+  </div>
+
+  <div class="auth-container">
+
+    <!-- LADO ESQUERDO — Explicação do projeto -->
+    <div class="auth-info">
+      <div class="auth-info-content">
+        <img src="{% static 'assets/logo.png' %}" alt="Imex Solutions" class="auth-logo">
+        <h1 class="auth-info-title">Gestão de Válvulas</h1>
+        <p class="auth-info-subtitle">Plataforma profissional para cadastro, consulta e gestão de especificações técnicas de válvulas industriais.</p>
+
+        <div class="auth-features">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div>
+              <div class="auth-feature-title">6 Tipos de Válvulas</div>
+              <div class="auth-feature-desc">Esfera, Gaveta, Globo, Retenção, Borboleta e Controle</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+            <div>
+              <div class="auth-feature-title">Folha de Dados em PDF</div>
+              <div class="auth-feature-desc">Geração automática de fichas técnicas padronizadas</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-search"></i></div>
+            <div>
+              <div class="auth-feature-title">Pesquisa Avançada</div>
+              <div class="auth-feature-desc">Filtros por tipo, material, classe, diâmetro e norma</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <div class="auth-feature-title">Normas e Certificações</div>
+              <div class="auth-feature-desc">NBR 15827, API, ASME, NACE, SIL e DBB/DIB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-info-footer">
+        <span>Imex Solutions &copy; 2026</span>
+      </div>
+
+      <svg class="auth-info-mark" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="18" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <line x1="60" y1="25" x2="60" y2="42" stroke="currentColor" stroke-width="2"></line>
+        <path d="M18 62 L54 42 L54 82 Z" fill="none" stroke="currentColor" stroke-width="2"></path>
+        <path d="M102 62 L66 42 L66 82 Z" fill="none" stroke="currentColor" stroke-width="2"></path>
+      </svg>
+    </div>
+
+    <!-- LADO DIREITO — Formulário -->
+    <div class="auth-form-side">
+
+      <p class="auth-panel-tag">Acesso ao sistema</p>
+
+      <!-- Abas Login / Cadastro -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Entrar</button>
+        <button class="auth-tab" data-tab="register">Criar Conta</button>
+        <span class="auth-tabs-indicator" id="auth-tabs-indicator" aria-hidden="true"></span>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form id="login-form" class="auth-form active" method="POST" action="">
+        {% csrf_token %}
+        <div class="auth-form-header">
+          <h2>Bem-vindo de volta</h2>
+          <p>Entre com suas credenciais para acessar o sistema.</p>
+        </div>
+
+        <div class="auth-field">
+          <label for="login-email" class="auth-label">E-mail</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-envelope"></i>
+            <input type="email" id="login-email" name="email" placeholder="seu@email.com" required>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="login-password" class="auth-label">Senha</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-lock"></i>
+            <input type="password" id="login-password" name="password" placeholder="Digite sua senha" required>
+            <button type="button" class="auth-toggle-pw" data-target="login-password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-options">
+          <label class="auth-remember">
+            <input type="checkbox" name="remember"> Lembrar de mim
+          </label>
+          <a href="{% url 'core:esqueci_senha_page' %}" class="auth-forgot">Esqueceu a senha?</a>
+        </div>
+
+        <button type="submit" class="auth-btn-primary" id="btn-login">Entrar</button>
+
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form id="register-form" class="auth-form" method="POST" action="">
+        {% csrf_token %}
+        <div class="auth-form-header">
+          <h2>Crie sua conta</h2>
+          <p>Preencha os dados abaixo para começar.</p>
+        </div>
+
+        <div class="auth-field">
+          <label for="reg-name" class="auth-label">Nome</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-person"></i>
+            <input type="text" id="reg-name" name="name" placeholder="Seu nome" required>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="reg-email" class="auth-label">E-mail</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-envelope"></i>
+            <input type="email" id="reg-email" name="email" placeholder="seu@email.com" required>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="reg-password" class="auth-label">Senha</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-lock"></i>
+            <input type="password" id="reg-password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8">
+            <button type="button" class="auth-toggle-pw" data-target="reg-password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label for="reg-password2" class="auth-label">Confirmar Senha</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-lock-fill"></i>
+            <input type="password" id="reg-password2" name="password2" placeholder="Repita a senha" required minlength="8">
+            <button type="button" class="auth-toggle-pw" data-target="reg-password2">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-btn-primary" id="btn-register">Criar Conta</button>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ── Overlay de progresso: criação de conta + login automático ───────── -->
+  <div id="auth-progress-overlay" class="auth-progress-overlay" aria-hidden="true">
+    <div class="auth-progress-card">
+
+      <div class="auth-progress-step" id="step-create">
+        <div class="auth-progress-icon">
+          <span class="auth-progress-spinner"></span>
+          <svg class="auth-progress-check" viewBox="0 0 24 24">
+            <polyline points="4,13 9,18 20,5"></polyline>
+          </svg>
+        </div>
+        <div class="auth-progress-text">
+          <span class="auth-progress-label">Criando sua conta</span>
+          <span class="auth-progress-sublabel">Salvando seus dados com segurança...</span>
+        </div>
+      </div>
+
+      <div class="auth-progress-line" id="progress-line"></div>
+
+      <div class="auth-progress-step" id="step-login">
+        <div class="auth-progress-icon">
+          <span class="auth-progress-spinner"></span>
+          <svg class="auth-progress-check" viewBox="0 0 24 24">
+            <polyline points="4,13 9,18 20,5"></polyline>
+          </svg>
+        </div>
+        <div class="auth-progress-text">
+          <span class="auth-progress-label">Entrando na sua conta</span>
+          <span class="auth-progress-sublabel">Preparando seu acesso...</span>
+        </div>
+      </div>
+
+      <p class="auth-progress-message" id="auth-progress-message"></p>
+    </div>
+  </div>
+
+  <!-- ── Overlay de sucesso ───────── -->
+  <div id="success-overlay" class="success-overlay">
+    <div class="success-card">
+      <div class="success-circle">
+        <svg viewBox="0 0 52 52">
+          <circle class="success-circle-bg" cx="26" cy="26" r="25"/>
+          <path class="success-check" d="M14 27 L22 35 L38 18"/>
+        </svg>
+      </div>
+
+      <h2 id="success-title">Sucesso!</h2>
+      <p id="success-text">Operação realizada com sucesso.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ── Tab switching ──────────────────────────────────────────────────
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = document.querySelectorAll('.auth-form');
+    const tabsIndicator = document.getElementById('auth-tabs-indicator');
+
+    function showTab(tabName) {
+      tabs.forEach((t, i) => {
+        t.classList.toggle('active', t.dataset.tab === tabName);
+        if (t.dataset.tab === tabName) tabsIndicator.style.transform = `translateX(${i * 100}%)`;
+      });
+      forms.forEach(f => f.classList.toggle('active', f.id === tabName + '-form'));
+    }
+
+    tabs.forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+
+    document.querySelectorAll('.auth-switch-link').forEach(link => {
+      link.addEventListener('click', () => showTab(link.dataset.goto));
+    });
+
+    // ── Toggle password visibility ─────────────────────────────────────
+    document.querySelectorAll('.auth-toggle-pw').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+      });
+    });
+
+    // Função para mostrar feedback no form
+    function showAuthMessage(form, type, message) {
+      let box = form.querySelector('.auth-message');
+      if (!box) {
+        box = document.createElement('div');
+        box.className = 'auth-message';
+        form.prepend(box);
+      }
+      box.className = `auth-message auth-message-${type}`;
+      box.textContent = message;
+      box.style.display = 'block';
+    }
+
+    function clearAuthMessages(form) {
+      const box = form.querySelector('.auth-message');
+      if (box) box.style.display = 'none';
+    }
+
+    // ── Overlay de progresso (criação de conta + login automático) ──────
+    const progressOverlay = document.getElementById('auth-progress-overlay');
+    const progressLine = document.getElementById('progress-line');
+    const stepCreate = document.getElementById('step-create');
+    const stepLogin = document.getElementById('step-login');
+    const progressMessage = document.getElementById('auth-progress-message');
+
+    function setStepState(stepEl, state) {
+      // state: 'pending' | 'active' | 'done' | 'error'
+      stepEl.classList.remove('is-active', 'is-done', 'is-error');
+      if (state !== 'pending') stepEl.classList.add('is-' + state);
+    }
+
+    function showProgressOverlay() {
+      setStepState(stepCreate, 'active');
+      setStepState(stepLogin, 'pending');
+      progressLine.classList.remove('is-filled');
+      progressMessage.textContent = '';
+      progressMessage.classList.remove('is-error');
+      progressOverlay.classList.add('is-visible');
+      progressOverlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideProgressOverlay(delay = 0) {
+      setTimeout(() => {
+        progressOverlay.classList.remove('is-visible');
+        progressOverlay.setAttribute('aria-hidden', 'true');
+      }, delay);
+    }
+
+    // ── Função para mostrar overlay de sucesso ─────────────────────────
+    function showSuccess(title, text, callback) {
+      document.getElementById("success-title").textContent = title;
+      document.getElementById("success-text").textContent = text;
+
+      const overlay = document.getElementById("success-overlay");
+      overlay.classList.add("show");
+
+      setTimeout(() => {
+        if (callback) {
+          callback();
+        }
+      }, 1700);
+    }
+
+    // ── Login via AJAX ─────────────────────────────────────────────────
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAuthMessages(this);
+
+      const data = {
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value,
+      };
+
+      try {
+        const resp = await fetch('/api/login/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: JSON.stringify(data),
+        });
+        const result = await resp.json();
+
+        if (result.success) {
+          showSuccess(
+            "Login realizado!",
+            "Bem-vindo novamente.",
+            () => window.location.href = "/"
+          );
+        } else {
+          let msg = 'Ocorreu um erro inesperado';
+          if (result.errors && typeof result.errors === 'object') {
+            msg = Object.values(result.errors).flat().join(' ');
+          } else if (result.message) {
+            msg = result.message;
+          } else if (result.error) {
+            msg = result.error;
+          }
+          showAuthMessage(this, 'error', msg);
+        }
+      } catch (err) {
+        showAuthMessage(this, 'error', 'Erro de conexão. Tente novamente.');
+      }
+    });
+
+    // ── Cadastro via AJAX, com login automático em seguida ─────────────
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearAuthMessages(this);
+
+      const nome = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      const password2 = document.getElementById('reg-password2').value;
+
+      const btnRegister = document.getElementById('btn-register');
+      btnRegister.disabled = true;
+      showProgressOverlay();
+
+      try {
+        const cadastroResp = await fetch('/api/cadastro/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: JSON.stringify({
+            nome: nome,
+            email: email,
+            password: password,
+            password_confirm: password2,
+          }),
+        });
+        const cadastroResult = await cadastroResp.json();
+
+        if (!cadastroResult.success) {
+          btnRegister.disabled = false;
+          hideProgressOverlay();
+          let msg = 'Ocorreu um erro inesperado';
+          if (cadastroResult.errors && typeof cadastroResult.errors === 'object') {
+            msg = Object.values(cadastroResult.errors).flat().join(' ');
+          } else if (cadastroResult.message) {
+            msg = cadastroResult.message;
+          } else if (cadastroResult.error) {
+            msg = cadastroResult.error;
+          }
+          showAuthMessage(this, 'error', msg);
+          return;
+        }
+
+        // Conta criada com sucesso — avança para a etapa de login
+        setStepState(stepCreate, 'done');
+        progressLine.classList.add('is-filled');
+        setStepState(stepLogin, 'active');
+
+        const loginResp = await fetch('/api/login/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: JSON.stringify({ email: email, password: password }),
+        });
+        const loginResult = await loginResp.json();
+
+        if (loginResult.success) {
+          setStepState(stepLogin, 'done');
+
+          setTimeout(() => {
+            hideProgressOverlay();
+            showSuccess(
+              "Conta criada!",
+              "Seu cadastro foi concluído com sucesso.",
+              () => window.location.href = "/"
+            );
+          }, 600);
+        } else {
+          // Conta criada, mas login automático não foi possível
+          setStepState(stepLogin, 'error');
+          progressMessage.classList.add('is-error');
+          progressMessage.textContent = loginResult.message
+            || 'Conta criada! Verifique seu e-mail para confirmar o acesso antes de entrar.';
+          btnRegister.disabled = false;
+          hideProgressOverlay(2800);
+          setTimeout(() => showTab('login'), 2800);
+        }
+      } catch (err) {
+        btnRegister.disabled = false;
+        hideProgressOverlay();
+        showAuthMessage(this, 'error', 'Erro de conexão. Tente novamente.');
+      }
+    });
+
+  </script>
+</body>
+</html>
+<!-- . -->

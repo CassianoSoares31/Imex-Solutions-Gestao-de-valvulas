@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Folha de Dados</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 12px;
+        }
+
+        body{
+            margin:0;
+            padding:0;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: {{ folha_fs|default:"8pt" }};
+            line-height: {{ folha_lh|default:"1.05" }};
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            table-layout:fixed;
+            font-size: {{ folha_fs|default:"8pt" }};
+        }
+
+        tr, td {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        td{
+            border:1px solid #000;
+            background:#ffffff;
+            height:auto;
+            padding:{{ folha_pad|default:"2px 4px" }};
+            white-space: normal;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .logo{
+            width:35%;
+            text-align:center;
+            vertical-align:middle;
+        }
+        .logo img{ width:110px; height:auto; }
+
+        .titulo{
+            background:#d9d9d9;
+            font-size:{{ folha_titulo_fs|default:"9.5pt" }};
+            font-weight:bold;
+            text-align:center;
+            padding:4px 2px;
+        }
+
+        .codigo-label,
+        .cabecalho,
+        .notas-titulo {
+            background:#d9d9d9;
+            font-size:{{ folha_cab_fs|default:"8.5pt" }};
+            font-weight:bold;
+            text-align:center;
+            padding:3px 2px;
+        }
+
+        .codigo{
+            background:#d9d9d9;
+            font-size:{{ folha_cab_fs|default:"8.5pt" }};
+            font-weight:bold;
+            text-align:center;
+            padding:3px 2px;
+        }
+
+        .grupo-coluna{
+            width:7%;
+            min-width:32px;
+            text-align:center;
+            vertical-align:middle;
+            padding:2px 1px;
+        }
+
+        .num{ width:4%; text-align:center; }
+        .item{ width:44.5%; }
+        .descricao{ width:44.5%; }
+
+        .linha td{
+            font-size:{{ folha_fs|default:"8pt" }} !important;
+            padding:{{ folha_pad|default:"2px 4px" }};
+        }
+
+        .notas-obs{ font-size:{{ folha_fs|default:"8pt" }}; padding:{{ folha_pad|default:"2px 4px" }}; }
+    </style>
+</head>
+
+<body>
+
+<table>
+    <colgroup>
+        <col style="width:7%">
+        <col style="width:4%">
+        <col style="width:44.5%">
+        <col style="width:44.5%">
+    </colgroup>
+
+    <tr>
+        <td class="logo" colspan="3"><img src="{{ logo_path }}"></td>
+        <td class="titulo">FOLHA DE DADOS<br>(DATA SHEET)</td>
+    </tr>
+
+    <tr>
+        <td class="codigo-label" colspan="3">CÓDIGO (CODE)</td>
+        <td class="codigo">{{ valvula.codigo }}</td>
+    </tr>
+
+    <tr>
+        <td class="codigo-label" colspan="3">CÓDIGO UNIVERSAL (UNIVERSAL CODE)</td>
+        <td class="codigo">{% for linha in codigo_universal_linhas %}{{ linha }}{% if not forloop.last %}<br>{% endif %}{% empty %}{{ codigo_universal }}{% endfor %}</td>
+    </tr>
+
+    <tr>
+        <td class="cabecalho grupo-coluna"></td>
+        <td class="cabecalho num">Nº</td>
+        <td class="cabecalho">{{ lbl_item }}</td>
+        <td class="cabecalho">{{ lbl_description }}</td>
+    </tr>
+
+    {% for categoria, categoria_img, itens, is_header in folha_grupos %}
+    {% if is_header %}
+    <tr>
+        <td class="notas-titulo" colspan="4">{{ categoria }}</td>
+    </tr>
+    {% for num, item, desc in itens %}
+    <tr class="linha">
+        <td class="grupo-coluna"></td>
+        <td class="num">{{ num }}</td>
+        <td class="item">{{ item }}</td>
+        <td class="descricao">{{ desc }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    {% for num, item, desc in itens %}
+    <tr class="linha">
+        {% if forloop.first %}
+        <td class="grupo-coluna" rowspan="{{ itens|length }}">{{ categoria_img }}</td>
+        {% endif %}
+        <td class="num">{{ num }}</td>
+        <td class="item">{{ item }}</td>
+        <td class="descricao">{{ desc }}</td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+
+    {% if observacao %}
+    <tr>
+        <td class="notas-obs" colspan="4">{{ lbl_observation }}: {{ observacao|linebreaksbr }}</td>
+    </tr>
+    {% endif %}
+
+</table>
+
+</body>
+</html>
+
+<!-- . -->

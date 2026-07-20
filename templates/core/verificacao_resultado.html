@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificação de Email • Imex Solutions</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:'Archivo',sans-serif;
+            background:linear-gradient(135deg,#e9f4f1,#f4f6f5);
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
+
+        .card{
+            width:100%;
+            max-width:480px;
+            background:#fff;
+            border-radius:24px;
+            padding:48px;
+            text-align:center;
+            box-shadow:
+                0 15px 40px rgba(0,0,0,.08),
+                0 5px 15px rgba(0,0,0,.04);
+            animation:fade .4s ease;
+        }
+
+        @keyframes fade{
+            from{
+                opacity:0;
+                transform:translateY(20px);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0);
+            }
+        }
+
+        .logo{
+            width:120px;
+            height:auto;
+            margin-bottom:24px;
+        }
+
+        .icon{
+            width:90px;
+            height:90px;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:42px;
+            margin:0 auto 24px;
+        }
+
+        .success{
+            background:#dcfce7;
+            color:#16a34a;
+        }
+
+        .error{
+            background:#fee2e2;
+            color:#dc2626;
+        }
+
+        h1{
+            font-size:28px;
+            color:#1e293b;
+            margin-bottom:12px;
+        }
+
+        p{
+            color:#64748b;
+            font-size:16px;
+            line-height:1.6;
+            margin-bottom:32px;
+        }
+
+        .btn{
+            display:inline-block;
+            width:100%;
+            background:#178272;
+            color:#fff;
+            text-decoration:none;
+            padding:15px;
+            border-radius:12px;
+            font-weight:600;
+            transition:.25s;
+        }
+
+        .btn:hover{
+            background:#0e5f53;
+            transform:translateY(-2px);
+            box-shadow:0 8px 20px rgba(23,130,114,.25);
+        }
+
+        .footer{
+            margin-top:28px;
+            font-size:13px;
+            color:#94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <!-- Caso tenha logo -->
+    <img src="{% static 'assets/logo.png' %}" alt="Imex Solutions" class="logo">
+
+    {% if sucesso %}
+
+        <div class="icon success">
+            ✓
+        </div>
+
+        <h1>Email confirmado!</h1>
+
+        <p>
+            {{ mensagem }}<br><br>
+            Sua conta foi ativada com sucesso. Agora você já pode acessar
+            a plataforma utilizando seu email e senha.
+        </p>
+
+    {% else %}
+
+        <div class="icon error">
+            ✕
+        </div>
+
+        <h1>Não foi possível verificar o email</h1>
+
+        <p>
+            {{ mensagem }}<br><br>
+            O link pode estar expirado ou já ter sido utilizado.
+            Caso necessário, solicite um novo email de verificação.
+        </p>
+
+    {% endif %}
+
+    <a href="{% url 'core:auth_page' %}" class="btn">
+        Ir para o Login
+    </a>
+
+    <div class="footer">
+        © {% now "Y" %} Imex Solutions
+    </div>
+
+</div>
+
+</body>
+</html>
+<!-- . -->

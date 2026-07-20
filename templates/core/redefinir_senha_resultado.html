@@ -1,0 +1,95 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imex Solutions - Redefinir senha</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/auth.css' %}" rel="stylesheet">
+</head>
+<body class="auth-body">
+
+  <div class="auth-container">
+
+    <!-- LADO ESQUERDO — Explicação do projeto -->
+    <div class="auth-info">
+      <div class="auth-info-content">
+        <img src="{% static 'assets/logo.png' %}" alt="Imex Solutions" class="auth-logo">
+        <h1 class="auth-info-title">Gestão de Válvulas</h1>
+        <p class="auth-info-subtitle">Plataforma profissional para cadastro, consulta e gestão de especificações técnicas de válvulas industriais.</p>
+
+        <div class="auth-features">
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-gear-wide-connected"></i></div>
+            <div>
+              <div class="auth-feature-title">6 Tipos de Válvulas</div>
+              <div class="auth-feature-desc">Esfera, Gaveta, Globo, Retenção, Borboleta e Controle</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-file-earmark-pdf"></i></div>
+            <div>
+              <div class="auth-feature-title">Folha de Dados em PDF</div>
+              <div class="auth-feature-desc">Geração automática de fichas técnicas padronizadas</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-search"></i></div>
+            <div>
+              <div class="auth-feature-title">Pesquisa Avançada</div>
+              <div class="auth-feature-desc">Filtros por tipo, material, classe, diâmetro e norma</div>
+            </div>
+          </div>
+
+          <div class="auth-feature-item">
+            <div class="auth-feature-icon"><i class="bi bi-shield-check"></i></div>
+            <div>
+              <div class="auth-feature-title">Normas e Certificações</div>
+              <div class="auth-feature-desc">NBR 15827, API, ASME, NACE, SIL e DBB/DIB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-info-footer">
+        <span>Imex Solutions &copy; 2026</span>
+      </div>
+    </div>
+
+    <!-- LADO DIREITO — Mensagem de resultado -->
+    <div class="auth-form-side">
+      <div class="auth-form active">
+        {% if sucesso %}
+          <div class="auth-message auth-message-success">
+            <i class="bi bi-check-circle-fill"></i>
+            {{ mensagem }}
+          </div>
+          <div class="auth-form-header">
+            <h2>Senha redefinida</h2>
+            <p>{{ mensagem }}</p>
+          </div>
+          <a href="{% url 'core:auth_page' %}" class="auth-btn-primary">Ir para login</a>
+        {% else %}
+          <div class="auth-message auth-message-error">
+            <i class="bi bi-x-octagon-fill"></i>
+            {{ mensagem }}
+          </div>
+          <div class="auth-form-header">
+            <h2>Link inválido</h2>
+            <p>{{ mensagem }}</p>
+          </div>
+          <a href="{% url 'core:esqueci_senha_page' %}" class="auth-btn-primary">Tentar novamente</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+<!-- . -->

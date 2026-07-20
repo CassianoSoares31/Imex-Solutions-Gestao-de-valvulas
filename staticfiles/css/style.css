@@ -1,0 +1,1688 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+IMEX SOLUTIONS — Professional Design System
+Industrial valve management UI
+════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Typography — Archivo (grotesca industrial) + IBM Plex Mono (dados/códigos) */
+  --font-sans: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', Consolas, monospace;
+
+  /* Brand — teal do logotipo + grafite */
+  --imex-navy: #252b31;
+  --imex-navy-light: #333b43;
+  --imex-navy-lighter: #4a545e;
+  --imex-brand: #178272;
+  --imex-brand-dark: #0e5f53;
+  --imex-brand-light: #45a99b;
+  --imex-brand-bg: #e9f4f1;
+
+  /* Aliases legados (usados em templates internos) */
+  --imex-blue: var(--imex-brand);
+  --imex-muted: #85918e;
+
+  /* Semantic — muted, professional */
+  --imex-success: #2d8650;
+  --imex-success-light: #e6f4ec;
+  --imex-warning: #b8860b;
+  --imex-warning-light: #fdf6e3;
+  --imex-danger: #c0392b;
+  --imex-danger-light: #fce8e6;
+  --imex-info: #287a8a;
+
+  /* Surfaces — papel frio, bordas suaves */
+  --imex-bg: #f4f6f5;
+  --imex-surface: #ffffff;
+  --imex-surface-elevated: #ffffff;
+  --imex-border: #e1e7e5;
+  --imex-border-light: #edf1f0;
+
+  /* Text — strong hierarchy */
+  --imex-text: #1e2427;
+  --imex-text-secondary: #475351;
+  --imex-text-muted: #85918e;
+  --imex-text-inverse: #f6faf9;
+
+  /* Shadows — subtle, no glow */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.07);
+  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.09);
+
+  /* Radius — cartões suaves, estilo ERP */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Transitions — minimal */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-smooth: 300ms ease;
+
+  /* Valve type colors — muted professional */
+  --valve-esfera: #2c5aa0;
+  --valve-gaveta: #2d8659;
+  --valve-globo: #b8860b;
+  --valve-retencao: #c0392b;
+  --valve-borboleta: #5b4a9e;
+  --valve-globo_controle: #9e4a6e;
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Transição suave ao alternar tema (claro/escuro).
+   Só ativa durante a janela do toggle (classe .theme-anim no <html>),
+   evitando overhead constante e garantindo que todas as props de tema
+   (cor, fundo, gradiente, borda, sombra, ícones svg) animem juntas. */
+html.theme-anim,
+html.theme-anim *,
+html.theme-anim *::before,
+html.theme-anim *::after {
+  transition: background-color var(--transition-smooth) ease,
+              background-image var(--transition-smooth) ease,
+              color var(--transition-smooth) ease,
+              border-color var(--transition-smooth) ease,
+              box-shadow var(--transition-smooth) ease,
+              fill var(--transition-smooth) ease,
+              stroke var(--transition-smooth) ease !important;
+}
+
+/* Respeita preferência de movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-anim,
+  html.theme-anim *,
+  html.theme-anim *::before,
+  html.theme-anim *::after {
+    transition: none !important;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--imex-bg);
+  color: var(--imex-text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+}
+
+/* ── Navbar — clean industrial header ─────────────────────────────────────── */
+.imex-navbar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--imex-border);
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+}
+
+.imex-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  position: relative;
+}
+
+.imex-navbar .brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.imex-navbar .brand-link a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  line-height: 0;
+}
+
+.imex-navbar .brand-logo {
+  height: 28px;
+  width: auto;
+  transition: opacity var(--transition-fast);
+}
+
+.brand-logo:hover {
+  opacity: 0.9;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.imex-navbar .brand-text {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--imex-navy);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.imex-navbar .brand-subtitle {
+  font-size: 0.6rem;
+  color: var(--imex-brand);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Toggle Button (Hamburger — sempre visível) ────────────────────────── */
+.navbar-toggler {
+  display: block;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--imex-border);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.navbar-toggler:hover {
+  background: var(--imex-brand-bg);
+  border-color: var(--imex-brand-light);
+}
+
+.toggler-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 22px;
+}
+
+.toggler-icon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--imex-navy);
+  border-radius: 2px;
+  transition: all var(--transition-fast);
+}
+
+/* Animação do toggle (X) */
+.navbar-toggler.active .toggler-icon span:nth-child(1) {
+  transform: rotate(45deg) translate(4px, 4px);
+}
+
+.navbar-toggler.active .toggler-icon span:nth-child(2) {
+  opacity: 0;
+}
+
+.navbar-toggler.active .toggler-icon span:nth-child(3) {
+  transform: rotate(-45deg) translate(4px, -4px);
+}
+
+/* ── Sidebar (off-canvas, aberta pelo hamburger) ─────────────────────────── */
+.imex-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1055;
+}
+
+.imex-sidebar-overlay.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
+.imex-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1060;
+  width: 270px;
+  max-width: 85vw;
+  background: var(--imex-surface, #fff);
+  border-left: 1px solid var(--imex-border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform var(--transition-smooth);
+  display: flex;
+  flex-direction: column;
+}
+
+.imex-sidebar.active {
+  transform: translateX(0);
+}
+
+.imex-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--imex-border);
+  font-weight: 700;
+  color: var(--imex-navy);
+}
+
+.imex-sidebar-close {
+  background: transparent;
+  border: none;
+  color: var(--imex-text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.imex-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.imex-sidebar-group-label {
+  padding: 0.6rem 0.75rem 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--imex-text-muted);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.nav-link-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--imex-text-secondary);
+  text-decoration: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.nav-link-item:hover {
+  background: var(--imex-brand-bg);
+  border-color: var(--imex-brand-light);
+  color: var(--imex-brand);
+}
+
+.nav-link-logout {
+  color: var(--imex-text);
+}
+
+.nav-link-logout:hover {
+  color: var(--imex-danger);
+  border-color: var(--imex-danger);
+  background: var(--imex-danger-light);
+}
+
+.nav-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--imex-navy);
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  white-space: nowrap;
+  border-top: 1px solid var(--imex-border-light);
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+}
+
+.nav-user-info i {
+  font-size: 1.1rem;
+  color: var(--imex-brand);
+}
+
+/* ── Main Layout ──────────────────────────────────────────────────────────── */
+.imex-main {
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── Stats Grid — compact dashboard strip ─────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: var(--imex-surface);
+  border: 1px solid var(--imex-border);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1.1rem;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  cursor: default;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--imex-brand-light);
+}
+
+.stat-card .stat-number {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card .stat-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--imex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* Dot de acento colorido por tipo */
+.stat-card .stat-label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin-top: 0.15rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--imex-border);
+}
+
+/* Type-specific colors — número + dot */
+.stat-card.total .stat-number { color: var(--imex-navy); }
+.stat-card.total .stat-label::before { background: var(--imex-brand); }
+.stat-card.esfera .stat-number { color: var(--valve-esfera); }
+.stat-card.esfera .stat-label::before { background: var(--valve-esfera); }
+.stat-card.gaveta .stat-number { color: var(--valve-gaveta); }
+.stat-card.gaveta .stat-label::before { background: var(--valve-gaveta); }
+.stat-card.globo .stat-number { color: var(--valve-globo); }
+.stat-card.globo .stat-label::before { background: var(--valve-globo); }
+.stat-card.retencao .stat-number { color: var(--valve-retencao); }
+.stat-card.retencao .stat-label::before { background: var(--valve-retencao); }
+.stat-card.borboleta .stat-number { color: var(--valve-borboleta); }
+.stat-card.borboleta .stat-label::before { background: var(--valve-borboleta); }
+.stat-card.globo_controle .stat-number { color: var(--valve-globo_controle); }
+.stat-card.globo_controle .stat-label::before { background: var(--valve-globo_controle); }
+
+/* ── Tab Navigation — underline style ─────────────────────────────────────── */
+.imex-tabs {
+  display: flex;
+  gap: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--imex-border);
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 1.25rem;
+  box-shadow: none;
+}
+
+.imex-tabs .nav-link {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--imex-text-muted);
+  border: none;
+  border-radius: 0;
+  padding: 0.65rem 1.25rem;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.imex-tabs .nav-link:hover {
+  color: var(--imex-text);
+  background: transparent;
+  border-bottom-color: var(--imex-border-light);
+}
+  
+.imex-tabs .nav-link.active {
+  color: var(--imex-brand);
+  background: transparent;
+  border-bottom-color: var(--imex-brand);
+  box-shadow: none;
+}
+
+.imex-tabs .nav-link i {
+  margin-right: 0.4rem;
+}
+
+/* ── Section Card ─────────────────────────────────────────────────────────── */
+.section-card {
+  background: var(--imex-surface);
+  border: 1px solid var(--imex-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  overflow: clip;
+  transition: box-shadow var(--transition-base);
+}
+
+.section-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.section-card .card-header {
+  background: transparent;
+  border-bottom: 1px solid var(--imex-border-light);
+  padding: 0.9rem 1.25rem;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--imex-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-card .card-header i {
+  color: var(--imex-brand);
+  font-size: 1rem;
+}
+
+.section-card .card-body {
+  padding: 1.25rem;
+}
+
+/* ── Form Styles — clean industrial inputs ────────────────────────────────── */
+.form-label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--imex-text-secondary);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.01em;
+}
+
+.form-select, .form-control {
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--imex-border);
+  padding: 0.5rem 0.75rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  background-color: var(--imex-surface);
+  color: var(--imex-text);
+}
+
+.form-select:hover, .form-control:hover {
+  border-color: var(--imex-brand-light);
+}
+
+.form-select:focus, .form-control:focus {
+  border-color: var(--imex-brand);
+  box-shadow: 0 0 0 2px rgba(23, 130, 114, 0.16);
+  outline: none;
+}
+
+.form-check-input {
+  width: 1.1em;
+  height: 1.1em;
+  cursor: pointer;
+}
+
+.form-check-input:checked {
+  background-color: var(--imex-brand);
+  border-color: var(--imex-brand);
+}
+
+.form-check-input:focus {
+  box-shadow: 0 0 0 2px rgba(23, 130, 114, 0.18);
+  border-color: var(--imex-brand-light);
+}
+
+/* ── Field Groups (show/hide) ─────────────────────────────────────────────── */
+.field-group {
+  display: none;
+}
+
+.field-group.visible {
+  display: block;
+}
+
+/* ── Section Dividers — simple lines ──────────────────────────────────────── */
+.form-section-title {
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: var(--imex-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.85rem;
+  margin-top: 1.25rem;
+  border-bottom: 1px solid var(--imex-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-section-title i {
+  font-size: 0.9rem;
+  color: var(--imex-brand);
+}
+
+/* ── Material Section ─────────────────────────────────────────────────────── */
+.material-section {
+  background: var(--imex-brand-bg);
+  border: 1px solid var(--imex-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 0.85rem;
+}
+
+/* ── Paginação da tabela ──────────────────────────────────────────────────── */
+#tabela-paginacao .page-link {
+  color: var(--imex-brand);
+  border-color: var(--imex-border);
+  background: var(--imex-surface);
+  cursor: pointer;
+}
+#tabela-paginacao .page-link:hover {
+  background: var(--imex-brand-bg);
+  border-color: var(--imex-brand-light);
+}
+#tabela-paginacao .page-item.active .page-link {
+  background: var(--imex-brand);
+  border-color: var(--imex-brand);
+  color: #fff;
+}
+#tabela-paginacao .page-item.disabled .page-link {
+  color: var(--imex-text-muted);
+  background: var(--imex-surface);
+  border-color: var(--imex-border);
+}
+
+/* ── Table — clean data grid ──────────────────────────────────────────────── */
+.table-valvulas {
+  font-size: 0.82rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-valvulas thead th {
+  background: var(--imex-bg);
+  font-weight: 600;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--imex-text-muted);
+  border-bottom: 2px solid var(--imex-border);
+  padding: 0.65rem 0.85rem;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+.table-valvulas tbody td {
+  padding: 0.6rem 0.85rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--imex-border-light);
+  transition: background var(--transition-fast);
+}
+
+.table-valvulas tbody tr:hover td {
+  background: var(--imex-brand-bg);
+}
+
+.table-valvulas tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Código na tabela — mono fica apertado em linhas compactas, usa sans legível */
+.table-valvulas .codigo-display {
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* ── Code Display — chip monoespaçado (identificação do equipamento) ──────── */
+.codigo-display, .codigo-badge {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.78rem;
+  background: var(--imex-brand-bg);
+  color: var(--imex-brand-dark);
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  letter-spacing: 0.04em;
+  display: inline-block;
+}
+
+/* ── Type Badges — pills estilo ERP ───────────────────────────────────────── */
+.badge-tipo, .tipo-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.26em 0.75em;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.badge-tipo.esfera, .tipo-badge.esfera,
+.badge-esfera {
+  background: #e0e9f4;
+  color: #1e3f73;
+  border-color: #c5d4e6;
+}
+
+.badge-tipo.gaveta, .tipo-badge.gaveta,
+.badge-gaveta {
+  background: #dceee4;
+  color: #1a5e3a;
+  border-color: #c0dcc9;
+}
+
+.badge-tipo.globo, .tipo-badge.globo,
+.badge-globo {
+  background: #f5ecd6;
+  color: #7a5a0a;
+  border-color: #e4d8b8;
+}
+
+.badge-tipo.retencao, .tipo-badge.retencao,
+.badge-retencao {
+  background: #f4d9d6;
+  color: #8c2920;
+  border-color: #e0c2bf;
+}
+
+.badge-tipo.borboleta, .tipo-badge.borboleta,
+.badge-borboleta {
+  background: #e6e2f0;
+  color: #3d2e6e;
+  border-color: #cec9db;
+}
+
+.badge-tipo.globo_controle, .tipo-badge.globo_controle,
+.badge-globo_controle {
+  background: #f0e0e8;
+  color: #6e2e4a;
+  border-color: #d8c3cf;
+}
+
+/* ── Action Buttons — compact icon buttons ────────────────────────────────── */
+.btn-action {
+  padding: 0.25rem 0.45rem;
+  font-size: 0.78rem;
+  border-radius: var(--radius-sm);
+  border-width: 1px;
+  transition: background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.btn-action:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Action Toolbar — botões de ação separados na tabela ──────────────────── */
+.action-toolbar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-toolbar .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 1.85rem;
+  padding: 0 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1;
+  border-width: 1px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.action-toolbar .btn i {
+  font-size: 0.92rem;
+}
+
+/* Botão de idioma (EN) — texto curto, mesmo tamanho dos ícones */
+.action-toolbar .action-lang {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.action-toolbar .btn:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Primary Buttons — solid, no gradient ─────────────────────────────────── */
+.btn-imex-primary {
+  background: var(--imex-brand);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.btn-imex-primary:hover {
+  background: var(--imex-brand-dark);
+  color: white;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-imex-primary:active {
+  background: var(--imex-navy-lighter);
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-imex-outline {
+  background: var(--imex-surface);
+  border: 1px solid var(--imex-border);
+  color: var(--imex-text-secondary);
+  font-weight: 600;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  font-size: 0.85rem;
+}
+
+.btn-imex-outline:hover {
+  border-color: var(--imex-brand);
+  color: var(--imex-brand);
+  background: var(--imex-brand-bg);
+}
+
+/* ── Alert — flat style ──────────────────────────────────────────────────── */
+.alert-codigo {
+  background: var(--imex-success-light);
+  border: 1px solid #a8d5ba;
+  border-radius: var(--radius-md);
+  color: #1a5e3a;
+  font-weight: 500;
+}
+
+/* ── Cadastro Scroll ──────────────────────────────────────────────────────── */
+.cadastro-scroll {
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  scroll-behavior: smooth;
+}
+
+.cadastro-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cadastro-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cadastro-scroll::-webkit-scrollbar-thumb {
+  background: var(--imex-border);
+  border-radius: 10px;
+}
+
+.cadastro-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--imex-text-muted);
+}
+
+/* ── Detail Modal — definition list style ─────────────────────────────────── */
+.detail-section {
+  margin-bottom: 1.25rem;
+}
+
+.detail-section h6 {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--imex-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--imex-border);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px dotted var(--imex-border-light);
+  font-size: 0.82rem;
+}
+
+.detail-row:hover {
+  background: var(--imex-brand-bg);
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.detail-row .detail-label {
+  color: var(--imex-text-muted);
+  font-weight: 500;
+}
+
+.detail-row .detail-value {
+  color: var(--imex-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ── Modal Styling — no fancy gradients ───────────────────────────────────── */
+.modal-content {
+  border: 1px solid var(--imex-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.modal-header {
+  border-bottom: 2px solid var(--imex-navy);
+  padding: 1rem 1.35rem;
+}
+
+.modal-header.bg-dark-imex, .modal-header.bg-dark-nav {
+  background: var(--imex-navy) !important;
+}
+
+.modal-header .modal-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--imex-border);
+  padding: 0.75rem 1.35rem;
+  background: var(--imex-bg);
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+.toast-container {
+  z-index: 9999;
+}
+
+/* ── Global Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--imex-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--imex-border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--imex-text-muted);
+}
+
+/* ── Responsive: Mobile (< 576px) ─────────────────────────────────────────── */
+@media (max-width: 575.98px) {
+  .imex-main {
+    padding: 0.75rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(102px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.6rem 0.7rem 0.6rem 0.85rem;
+  }
+
+  .stat-card .stat-number {
+    font-size: 1.3rem;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.58rem;
+  }
+
+  .imex-tabs {
+    border-bottom: 2px solid var(--imex-border);
+  }
+
+  .imex-tabs .nav-link {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .section-card .card-header {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .section-card .card-body {
+    padding: 0.85rem;
+  }
+
+  .cadastro-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .table-valvulas {
+    font-size: 0.75rem;
+  }
+
+  .table-valvulas thead th {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.62rem;
+  }
+
+  .table-valvulas tbody td {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .btn-action {
+    padding: 0.15rem 0.35rem;
+    font-size: 0.68rem;
+  }
+
+  .action-toolbar .btn {
+    min-width: 1.7rem;
+    height: 1.65rem;
+    padding: 0 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .action-toolbar .btn i {
+    font-size: 0.82rem;
+  }
+
+  .action-toolbar .action-lang {
+    font-size: 0.6rem;
+  }
+
+  .form-label {
+    font-size: 0.68rem;
+  }
+
+  .imex-navbar .brand-text {
+    font-size: 0.9rem;
+  }
+
+  .imex-navbar .brand-subtitle {
+    display: none;
+  }
+
+  .imex-navbar .brand-logo {
+    height: 30px;
+  }
+}
+
+/* ── Responsive: Tablet (576px - 1024px) ──────────────────────────────────── */
+@media (min-width: 576px) and (max-width: 1023.98px) {
+    .search-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-bar > div {
+        width: 100%;
+        min-width: 0 !important;
+    }
+
+    #btn-pesquisar,
+    #btn-pesquisa-avancada {
+        width: 100%;
+    }
+
+    .search-bar > div:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* ── Responsive: Desktop (1024px+) ────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .imex-main {
+    padding: 1.75rem 2rem;
+  }
+  .imex-nav-container {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .imex-navbar .brand-text {
+    font-size: 0.92rem;
+  }
+}
+/* ── Responsive: Large Desktop (1440px+) ──────────────────────────────────── */
+@media (min-width: 1440px) {
+  .imex-main {
+    padding: 2rem 3rem;
+  }
+}
+
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+.bg-dark-nav, .bg-dark-imex {
+  background: var(--imex-navy) !important;
+}
+
+.text-brand {
+  color: var(--imex-brand) !important;
+}
+
+/* ── Animations — minimal, purposeful ─────────────────────────────────────── */
+.animate-in {
+  animation: none;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--imex-text-muted);
+}
+
+.empty-state i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Search Bar ───────────────────────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search-bar .form-label {
+  margin-bottom: 0.2rem;
+}
+
+@media (max-width: 575.98px) {
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar > div {
+    width: 100% !important;
+  }
+}
+
+/* ── Pesquisa Avançada — evita overflow horizontal do row g-3 ────────────── */
+#painel-pesquisa-avancada > .card-body {
+  overflow-x: hidden;
+}
+
+.stat-card:nth-child(6) { animation-delay: 250ms; }
+.stat-card:nth-child(7) { animation-delay: 300ms; }
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--imex-text-muted);
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  opacity: 0.4;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ── Skeleton Loading ─────────────────────────────────────────────────────── */
+.skeleton-bone {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e9ecef 25%, #f3f4f6 50%, #e9ecef 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-row td {
+  padding: 0.65rem 1rem !important;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+[data-bs-theme="dark"] .skeleton-bone {
+  background: linear-gradient(90deg, var(--imex-surface-elevated) 25%, var(--imex-surface) 50%, var(--imex-surface-elevated) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Search Bar ───────────────────────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search-bar .form-label {
+  margin-bottom: 0.25rem;
+}
+@media (max-width: 768px) {
+  .imex-nav-container {
+    padding: 0.35rem 0.75rem;
+  }
+
+  .imex-navbar .brand-logo {
+    height: 26px;
+  }
+
+  .imex-navbar .brand-text {
+    font-size: 0.9rem;
+  }
+
+  .imex-navbar .brand-subtitle {
+    font-size: 0.62rem;
+  }
+}
+@media (max-width: 767.98px) {
+ .search-bar {
+ flex-wrap: wrap;
+ }
+
+ .search-bar > div {
+ min-width: 0 !important;
+ }
+
+ .search-bar > div:first-child,
+ .search-bar > div:nth-child(2) {
+ flex: 1 1 45% !important;
+ }
+
+ .search-bar > div:last-child {
+ flex: 1 1 100% !important;
+ }
+
+ .search-bar > div:last-child .btn {
+ flex: 1;
+ }
+}
+
+@media (max-width: 575.98px) {
+ .search-bar {
+ flex-direction: column;
+ }
+
+ .search-bar > div {
+ width: 100% !important;
+ min-width: 0 !important;
+ }
+}
+@media (max-width: 480px) {
+  .imex-nav-container {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .imex-navbar .brand-logo {
+    height: 24px;
+  }
+  
+  .imex-navbar .brand-text {
+    font-size: 0.82rem;
+  }
+  
+  .imex-navbar .brand-subtitle {
+    display: none;
+  }
+  
+  .brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .nav-link-item {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .nav-user-info {
+    font-size: 0.82rem;
+  }
+}
+
+/* Animação do menu mobile */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Download Toast ──────────────────────────────────────────────────────── */
+.download-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 10000;
+  background: var(--imex-navy);
+  color: #fff;
+  border-radius: var(--radius-md, 8px);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  transform: translateY(120%);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.download-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.download-toast.done {
+  background: var(--imex-success, #2d8659);
+}
+
+.download-toast.error {
+  background: var(--imex-danger, #dc3545);
+}
+
+.download-toast-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.download-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.download-toast-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+}
+
+.download-toast-detail {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.download-toast .spinner-border {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+}
+
+@media (max-width: 575.98px) {
+  .download-toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    min-width: 0;
+  }
+}
+
+/* ── Responsive: Tablet Landscape (768px – 1279px) ──────────────────────── */
+@media (min-width: 768px) and (max-width: 1279px) {
+  /* Layout */
+  .imex-main {
+    padding: 1rem 1.25rem;
+  }
+
+  /* Navbar */
+  .imex-nav-container {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .imex-navbar .brand-logo { height: 30px; }
+  .imex-navbar .brand-text { font-size: 0.88rem; }
+  .imex-navbar .brand-subtitle { font-size: 0.6rem; }
+  .nav-link-item { font-size: 0.72rem; padding: 0.3rem 0.5rem; }
+  .nav-user-info { font-size: 0.78rem; gap: 0.3rem; }
+  .imex-sidebar-body { gap: 0.45rem; }
+  .theme-toggle { width: 34px; height: 34px; font-size: 1rem; margin-right: 0.5rem; }
+
+  /* Stats — compactas, reflui conforme a largura */
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 0.6rem; }
+  .stat-card { padding: 0.65rem 0.75rem 0.65rem 0.9rem; }
+  .stat-card .stat-number { font-size: 1.3rem; }
+  .stat-card .stat-label { font-size: 0.58rem; }
+
+  /* Tabs */
+  .imex-tabs .nav-link { font-size: 0.78rem; padding: 0.5rem 0.75rem; }
+
+  /* Section cards */
+  .section-card .card-header { padding: 0.55rem 0.9rem; font-size: 0.8rem; }
+  .section-card .card-body { padding: 0.85rem; }
+
+  /* Table */
+  .table-valvulas { font-size: 0.75rem; }
+  .table-valvulas thead th { font-size: 0.62rem; padding: 0.45rem 0.5rem; }
+  .table-valvulas tbody td { padding: 0.4rem 0.5rem; }
+  .btn-action { padding: 0.18rem 0.3rem; font-size: 0.68rem; }
+  .action-toolbar .btn { min-width: 1.6rem; height: 1.55rem; padding: 0 0.3rem; font-size: 0.7rem; }
+  .action-toolbar .btn i { font-size: 0.78rem; }
+  .action-toolbar .action-lang { font-size: 0.58rem; }
+  .codigo-display, .codigo-badge { font-size: 0.72rem; padding: 0.1rem 0.4rem; }
+
+  /* Forms */
+  .form-label { font-size: 0.7rem; }
+  .form-select, .form-control { font-size: 0.8rem; padding: 0.4rem 0.6rem; }
+  .form-section-title { font-size: 0.72rem; margin-top: 1rem; margin-bottom: 0.65rem; }
+  .material-section { padding: 0.75rem; margin-top: 0.65rem; }
+
+  /* Cadastro scroll — ajusta ao viewport do tablet */
+  .cadastro-scroll { max-height: calc(100vh - 240px); }
+
+  /* Search bar */
+  .search-bar { gap: 0.5rem; }
+
+  /* Pesquisa avançada — scroll interno no tablet */
+  #painel-pesquisa-avancada > .card-body {
+    max-height: calc(100vh - 280px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Modal */
+  .modal-dialog.modal-lg { max-width: 90%; }
+
+  /* Detail modal */
+  .detail-row { font-size: 0.78rem; padding: 0.3rem 0; }
+  .detail-section h6 { font-size: 0.68rem; }
+  .detail-section { margin-bottom: 1rem; }
+
+  /* Download toast */
+  .download-toast { min-width: 240px; max-width: 340px; padding: 0.85rem 1.15rem; }
+  .download-toast-title { font-size: 0.8rem; }
+  .download-toast-detail { font-size: 0.7rem; }
+
+  /* Empty state */
+  .empty-state { padding: 2rem 1.25rem; }
+  .empty-state i { font-size: 1.8rem; }
+  .empty-state p { font-size: 0.82rem; }
+
+  /* Badge tipo */
+  .badge-tipo, .tipo-badge { font-size: 0.62rem; padding: 0.15em 0.5em; }
+
+  /* Buttons */
+  .btn-imex-primary, .btn-imex-outline { font-size: 0.82rem; padding: 0.5rem 1.1rem; }
+}
+
+/* ── Tablet Landscape (altura reduzida) ──────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1279px) and (orientation: landscape) {
+  #painel-pesquisa-avancada > .card-body {
+    /* fallback puro-CSS; o JS refina via max-height inline pela posição real */
+    max-height: 60vh;
+    max-height: 60dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #painel-pesquisa-avancada .row.g-3 {
+    row-gap: 0.5rem !important;
+  }
+
+  #painel-pesquisa-avancada .form-label {
+    margin-bottom: 0.1rem;
+    font-size: 0.65rem;
+  }
+
+  #painel-pesquisa-avancada .form-select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  #painel-pesquisa-avancada p.text-muted { display: none; }
+}
+
+/* ── Dark Mode ────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] {
+  /* Brand */
+  --imex-navy: #0e1113;
+  --imex-navy-light: #16191c;
+  --imex-navy-lighter: #2b3034;
+  --imex-brand: #31bda6;
+  --imex-brand-dark: #229681;
+  --imex-brand-light: #5cd4bf;
+  --imex-brand-bg: #142e28;
+
+  /* Aliases legados */
+  --imex-muted: #7c878b;
+
+  /* Semantic */
+  --imex-success: #4caa7c;
+  --imex-success-light: #16281f;
+  --imex-warning: #d9a82e;
+  --imex-warning-light: #2a2410;
+  --imex-danger: #e06458;
+  --imex-danger-light: #2a1614;
+  --imex-info: #4aa3b3;
+
+  /* Surfaces — grafite neutro (referência ERP) */
+  --imex-bg: #0f1213;
+  --imex-surface: #15181b;
+  --imex-surface-elevated: #1c2024;
+  --imex-border: #272c30;
+  --imex-border-light: #1f2428;
+
+  /* Text */
+  --imex-text: #e7eaec;
+  --imex-text-secondary: #a9b2b7;
+  --imex-text-muted: #7c878b;
+  --imex-text-inverse: #f7f9fa;
+
+  /* Shadows — deeper in dark */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Valve type colors — brighter for contrast */
+  --valve-esfera: #6fa3e0;
+  --valve-gaveta: #5cc294;
+  --valve-globo: #e0bb4e;
+  --valve-retencao: #e8786c;
+  --valve-borboleta: #9b8ad6;
+  --valve-globo_controle: #d680a6;
+
+  color-scheme: dark;
+}
+
+/* Hardcoded surfaces overridden in dark */
+[data-bs-theme="dark"] .imex-navbar { background: var(--imex-surface); }
+[data-bs-theme="dark"] .table-valvulas thead th { background: var(--imex-surface-elevated); }
+[data-bs-theme="dark"] .modal-footer { background: var(--imex-surface-elevated); }
+
+/* Brand text legível no dark (navy fica invisível) */
+[data-bs-theme="dark"] .imex-navbar .brand-text { color: var(--imex-text); }
+
+/* Hambúrguer mobile — barras navy somem na navbar escura → barras claras */
+[data-bs-theme="dark"] .toggler-icon span { background: var(--imex-text); }
+[data-bs-theme="dark"] .navbar-toggler { border-color: var(--imex-border); }
+
+/* Logo no dark — branca, igual auth.html */
+[data-bs-theme="dark"] .imex-navbar .brand-logo {
+  filter: brightness(0) invert(1);
+}
+
+/* Sidebar no dark */
+[data-bs-theme="dark"] .imex-sidebar {
+  background: var(--imex-surface-elevated);
+  border-color: var(--imex-border);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+}
+[data-bs-theme="dark"] .imex-sidebar-header {
+  color: var(--imex-text);
+  border-color: var(--imex-border);
+}
+[data-bs-theme="dark"] .nav-link-item:hover {
+  background: var(--imex-surface);
+}
+
+/* Textos navy ficam invisíveis no dark → texto claro */
+[data-bs-theme="dark"] .nav-user-info { color: var(--imex-text); }
+[data-bs-theme="dark"] .stat-card.total .stat-number { color: var(--imex-text); }
+[data-bs-theme="dark"] .section-card .card-header { color: var(--imex-text); }
+[data-bs-theme="dark"] .form-section-title { color: var(--imex-text); }
+
+/* Código da válvula — chip escuro no dark */
+[data-bs-theme="dark"] .codigo-display,
+[data-bs-theme="dark"] .codigo-badge {
+  background: var(--imex-brand-bg);
+  color: var(--imex-brand-light);
+}
+
+/* Alert de sucesso — verde escuro hardcoded fica ilegível no dark */
+[data-bs-theme="dark"] .alert-codigo {
+  color: #7ee2a8;
+  border-color: #2e7d52;
+}
+
+/* Banner de rascunho não finalizado — amarelo claro do Bootstrap fica ilegível no dark */
+[data-bs-theme="dark"] #rascunho-banner {
+  background: var(--imex-warning-light);
+  border-color: var(--imex-warning);
+  color: var(--imex-text);
+}
+[data-bs-theme="dark"] #rascunho-banner .btn-outline-secondary {
+  color: var(--imex-text);
+  border-color: var(--imex-border);
+}
+[data-bs-theme="dark"] #rascunho-banner .btn-outline-secondary:hover {
+  background: var(--imex-surface-elevated);
+  color: var(--imex-text);
+}
+
+/* Modal Visualizar — títulos das seções usam navy fixo, somem no dark */
+[data-bs-theme="dark"] .detail-section h6 {
+  color: var(--imex-brand-light);
+}
+
+/* Type badges — dark variants */
+[data-bs-theme="dark"] .badge-tipo.esfera,
+[data-bs-theme="dark"] .tipo-badge.esfera,
+[data-bs-theme="dark"] .badge-esfera {
+  background: #1d2c41; color: #8fb6e6; border-color: #2c4159;
+}
+[data-bs-theme="dark"] .badge-tipo.gaveta,
+[data-bs-theme="dark"] .tipo-badge.gaveta,
+[data-bs-theme="dark"] .badge-gaveta {
+  background: #16301f; color: #6fc99a; border-color: #244a33;
+}
+[data-bs-theme="dark"] .badge-tipo.globo,
+[data-bs-theme="dark"] .tipo-badge.globo,
+[data-bs-theme="dark"] .badge-globo {
+  background: #2f2810; color: #e0bb4e; border-color: #4a3f1c;
+}
+[data-bs-theme="dark"] .badge-tipo.retencao,
+[data-bs-theme="dark"] .tipo-badge.retencao,
+[data-bs-theme="dark"] .badge-retencao {
+  background: #311714; color: #e8786c; border-color: #4d2723;
+}
+[data-bs-theme="dark"] .badge-tipo.borboleta,
+[data-bs-theme="dark"] .tipo-badge.borboleta,
+[data-bs-theme="dark"] .badge-borboleta {
+  background: #221d33; color: #aa98e0; border-color: #352e4d;
+}
+[data-bs-theme="dark"] .badge-tipo.globo_controle,
+[data-bs-theme="dark"] .tipo-badge.globo_controle,
+[data-bs-theme="dark"] .badge-globo_controle {
+  background: #2f1c28; color: #d680a6; border-color: #4a2c3c;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--imex-border);
+  color: var(--imex-text-secondary);
+  border-radius: var(--radius-md);
+  margin-left: auto;
+  margin-right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.theme-toggle:hover {
+  background: var(--imex-brand-bg);
+  color: var(--imex-brand);
+}
+.theme-toggle .bi-sun-fill { display: none; }
+[data-bs-theme="dark"] .theme-toggle .bi-moon-stars-fill { display: none; }
+[data-bs-theme="dark"] .theme-toggle .bi-sun-fill { display: inline-block; }
+/* . */
