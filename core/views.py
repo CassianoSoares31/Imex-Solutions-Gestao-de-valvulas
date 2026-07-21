@@ -3628,6 +3628,9 @@ _VALOR_PT_EN = {
     # Instrumentação Sim/Não (Solenoide, Chave Fim de Curso, Sensor Posição, Lock-Up, Escape Rápido)
     "SIM": "Yes",
     "NÃO": "No",
+    # Válvula Lock-Up / Escape Rápido
+    "2 VIAS": "2-Way",
+    "3 VIAS": "3-Way",
     # Filtro
     "SIM, COM MANÔMETROS": "Yes, with Gauges",
     "SIM, SEM MANÔMETROS": "Yes, without Gauges",
