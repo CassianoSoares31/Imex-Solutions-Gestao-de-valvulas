@@ -1823,6 +1823,9 @@ function initCombo(id, opcoes) {
     hidden.value = btn.dataset.valor;
     busca.value = btn.dataset.valor;
     dd.style.display = 'none';
+    // Dispara 'change' no hidden pra quem escuta o valor do combo reagir
+    // (ex.: espelho Obturador -> Haste na Esfera+NBR), igual um <select> nativo.
+    hidden.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
 
@@ -2173,7 +2176,27 @@ async function carregarMateriaisDinamicos(tipoValvula, tiposMaterial, selectedMa
     const label = TIPO_MATERIAL_LABEL[tipoMat] || tipoMat;
     const div = document.createElement('div');
     div.className = 'row g-3 mb-2 align-items-center';
-    div.innerHTML = `
+    const isObturador = tipoMat === 'OBTURADOR';
+    const isSede = tipoMat === 'SEDE';
+    // Obturador e Sede têm 180+ opções — viram combo de busca digitável (mesmo
+    // padrão da Cor) em vez de <select> nativo. O valor real continua num
+    // <input type="hidden"> com a mesma classe/atributo material-select, então
+    // o resto do código (coleta no submit, validação de obrigatório, clone)
+    // trata igual a qualquer outro material.
+    const isCombo = isObturador || isSede;
+    const comboId = `${containerId}-${tipoMat.toLowerCase()}-combo`;
+    div.innerHTML = isCombo ? `
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">${label}</label>
+      </div>
+      <div class="col-md-9">
+        <div class="position-relative combo-select">
+          <input type="text" id="${comboId}_busca" class="form-control" placeholder="Digite para pesquisar..." autocomplete="off">
+          <input type="hidden" id="${comboId}" name="material_${tipoMat}" class="material-select" data-tipo-material="${tipoMat}">
+          <div id="${comboId}_dropdown" class="list-group position-absolute w-100 shadow-sm combo-dropdown" style="display:none; z-index:1056; max-height:240px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    ` : `
       <div class="col-md-3">
         <label class="form-label fw-semibold">${label}</label>
       </div>
@@ -2188,11 +2211,17 @@ async function carregarMateriaisDinamicos(tipoValvula, tiposMaterial, selectedMa
     try {
       const resp = await fetch(`${URLS.materiaisPorTipo}?tipo_valvula=${tipoValvula}&tipo_material=${tipoMat}`);
       const data = await resp.json();
-      const select = div.querySelector('select');
-      populateSelect(select, data.materiais || [], 'Selecione...');
       const selectedValue = selectedMaterials[tipoMat];
-      if (selectedValue) {
-        select.value = selectedValue;
+      let select;
+      if (isCombo) {
+        select = div.querySelector(`[data-tipo-material="${tipoMat}"]`);
+        const materiaisLista = (data.materiais || []).map(m => Array.isArray(m) ? m[0] : m);
+        initCombo(comboId, materiaisLista);
+        if (selectedValue) setComboValue(comboId, selectedValue);
+      } else {
+        select = div.querySelector('select');
+        populateSelect(select, data.materiais || [], 'Selecione...');
+        if (selectedValue) select.value = selectedValue;
       }
       if (tipoMat === 'GAXETA') {
         const tipoInput = container.closest('form')?.querySelector('[name="tipo_valvula"]');
@@ -2226,8 +2255,10 @@ async function carregarMateriaisDinamicos(tipoValvula, tiposMaterial, selectedMa
           const tipoInput = (form || document).querySelector('[name="tipo_valvula"]') || document.getElementById('id_tipo_valvula');
           const nbrInput = (form || document).querySelector('[name="nbr"]') || document.getElementById('id_nbr');
           if (tipoInput?.value === 'ESFERA' && nbrInput?.checked) {
-            const obturadorSel = container.querySelector('select[data-tipo-material="OBTURADOR"]');
-            if (obturadorSel) obturadorSel.value = select.value;
+            // Obturador é combo (input hidden), não <select> — atualiza via setComboValue
+            // pra sincronizar também o texto visível da busca.
+            const obturadorSel = container.querySelector('[data-tipo-material="OBTURADOR"]');
+            if (obturadorSel) setComboValue(obturadorSel.id, select.value);
           }
         });
       }
@@ -3611,18 +3642,20 @@ function aplicarRegraHasteObturador(container) {
   const nbrInput = (form || document).querySelector('[name="nbr"]') || document.getElementById('id_nbr');
   const tipo = tipoInput?.value || '';
   const nbrAtivo = nbrInput?.checked || false;
-  const obturadorSelect = container.querySelector('select[data-tipo-material="OBTURADOR"]');
+  // Obturador é combo (input hidden + busca visível), não <select>.
+  const obturadorSelect = container.querySelector('[data-tipo-material="OBTURADOR"]');
   const hasteSelect = container.querySelector('select[data-tipo-material="HASTE"]');
 
   if (!hasteSelect || !obturadorSelect) return;
+  const obturadorBusca = document.getElementById(obturadorSelect.id + '_busca');
 
   if (tipo === 'ESFERA' && nbrAtivo) {
     if (obturadorSelect.value) hasteSelect.value = obturadorSelect.value;
     hasteSelect.classList.add('bg-info-subtle');
-    obturadorSelect.classList.add('bg-info-subtle');
+    obturadorBusca?.classList.add('bg-info-subtle');
   } else {
     hasteSelect.classList.remove('bg-info-subtle');
-    obturadorSelect.classList.remove('bg-info-subtle');
+    obturadorBusca?.classList.remove('bg-info-subtle');
   }
 }
 
@@ -5676,10 +5709,12 @@ async function duplicarValvula(id) {
       if (el) el.checked = !!v[c];
     });
 
-    // Materiais
+    // Materiais (Obturador é combo/input hidden — usa setComboValue p/ sincronizar a busca visível)
     (v.materiais || []).forEach(m => {
       const sel = document.querySelector(`.material-select[data-tipo-material="${m.tipo_material}"]`);
-      if (sel) sel.value = m.material;
+      if (!sel) return;
+      if (sel.tagName === 'SELECT') sel.value = m.material;
+      else setComboValue(sel.id, m.material);
     });
 
     // Vedação Sede/Tampa — só Esfera (carregarOpcoesPorTipo já escondeu/limpou o select p/ os demais)
@@ -6772,7 +6807,9 @@ async function restaurarRascunho() {
     });
     (d.materiais || []).forEach(m => {
       const sel = document.querySelector(`#form-valvula .material-select[data-tipo-material="${m.tipo_material}"]`);
-      if (sel) sel.value = m.material;
+      if (!sel) return;
+      if (sel.tagName === 'SELECT') sel.value = m.material;
+      else setComboValue(sel.id, m.material);
     });
     if (d.vedacoes && d.vedacoes.length) {
       const vedJ = document.getElementById('id_vedacao_junta');

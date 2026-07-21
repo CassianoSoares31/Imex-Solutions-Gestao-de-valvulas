@@ -2,7 +2,7 @@
 
 ## Visao Geral
 
-Sistema web para cadastro, consulta e exportacao de especificacoes tecnicas de valvulas industriais. Desenvolvido em **Django 6.0** com **PostgreSQL** (Supabase), deploy no **Render** (https://imex-solutions.onrender.com/).
+Sistema web para cadastro, consulta e exportacao de especificacoes tecnicas de valvulas industriais. Desenvolvido em **Django 6.0** com **PostgreSQL** (Supabase).
 
 O sistema e uma SPA (single-page application) server-rendered: o Django renderiza templates HTML e toda a interacao acontece via chamadas AJAX (JSON) para endpoints da API REST interna. Nao existe framework JS de frontend separado.
 
@@ -57,7 +57,6 @@ Imex-Solutions/
 ├── staticfiles/                # Coletados pelo collectstatic (WhiteNoise serve daqui)
 ├── manage.py                   # CLI do Django
 ├── requirements.txt            # Dependencias Python
-├── build.sh                    # Build do Render: pip install + migrate + collectstatic
 ├── .env / .env.example         # Variaveis de ambiente
 └── README.MD                   # Requisitos e opcoes por tipo de valvula
 ```
@@ -1253,7 +1252,7 @@ DEBUG=True/False
 SECRET_KEY=...
 DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
-SITE_URL=https://imex-solutions.onrender.com/
+SITE_URL=https://seu-dominio.com/
 SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET   # anexos; sem isso cai no StorageBlob
 ```
 
@@ -1268,7 +1267,7 @@ python manage.py runserver
 # Testes (SQLite em memoria)
 python manage.py test --settings=config.settings_test
 
-# Deploy (Render): build.sh + gunicorn
+# Deploy: gunicorn
 gunicorn config.wsgi --log-file -
 ```
 
@@ -1277,8 +1276,8 @@ gunicorn config.wsgi --log-file -
 
 ### Email
 SMTP Gmail com TLS, timeout 10s. Verificacao de cadastro em thread separada (async);
-reset de senha sincrono. **No Render (plano gratuito) a porta 587 esta fechada — email
-so funciona local.**
+reset de senha sincrono. **Alguns provedores de hospedagem bloqueiam a porta 587
+outbound — se o email nao sair em producao, confirmar que a porta esta liberada.**
 
 ---
 

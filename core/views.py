@@ -223,6 +223,8 @@ def cadastro_api(request):
         errors["nome"] = "Nome é obrigatório"
     if not email:
         errors["email"] = "Email é obrigatório"
+    elif not email.lower().endswith("@imexsolutions.com.br"):
+        errors["email"] = "Cadastro permitido só com email @imexsolutions.com.br"
     if not password:
         errors["password"] = "Senha é obrigatória"
     elif len(password) < 8:

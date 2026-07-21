@@ -7,7 +7,7 @@
 
 Adicionar campo opcional de **anexo** na criação (e edição/visualização) de válvulas.
 Cada válvula pode ter **zero, um ou vários** anexos (PDF, PNG, JPG/JPEG). Anexos
-persistem em **Supabase Storage** (não no disco efêmero do Render), aparecem no
+persistem em **Supabase Storage** (não no disco efêmero do servidor), aparecem no
 detalhe da válvula na web, são incluídos nos ZIPs de exportação e anexados nos
 e-mails de envio.
 
@@ -28,7 +28,7 @@ e-mails de envio.
 Antes do código funcionar em produção, o usuário precisa:
 
 1. No painel Supabase → Storage → criar bucket (ex.: `anexos-valvulas`), privado.
-2. Adicionar 3 variáveis de ambiente (local `.env` + Render):
+2. Adicionar 3 variáveis de ambiente (local `.env` + servidor de produção):
    - `SUPABASE_URL` — URL do projeto (ex.: `https://xneoxfztyodycdswzawt.supabase.co`)
    - `SUPABASE_KEY` — chave `service_role` (secreta, server-side only)
    - `SUPABASE_BUCKET` — nome do bucket (ex.: `anexos-valvulas`)
