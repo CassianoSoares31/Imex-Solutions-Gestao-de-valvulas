@@ -165,11 +165,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', '')
 SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', '')
+
 # Email - Sempre SMTP para desenvolvimento e produção
+# EMAIL_HOST/PORT/USER/PASSWORD são configuráveis via .env — permite usar
+# Gmail (TLS, porta 587) em dev local e um e-mail do próprio domínio
+# (SSL, porta 465, ex. Hostgator) em produção, sem mudar código.
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 EMAIL_TIMEOUT = 10
@@ -177,4 +182,3 @@ DEFAULT_FROM_EMAIL = f'Imex Solutions <{os.environ.get("EMAIL_HOST_USER", "norep
 
 # URL base do sistema (usada no link do email)
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
-# .
