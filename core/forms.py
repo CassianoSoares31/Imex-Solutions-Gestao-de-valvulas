@@ -24,11 +24,12 @@ class ValvulaForm(forms.ModelForm):
             "dib", "valvula_alivio", "dispositivo_antiestatico",
             "uso_geral", "baixa_emissao_fugitiva", "certificacao_sil",
             "nace", "revestimento", "tipo_castelo", "juncao_corpo_castelo",
+            "tipo_retencao", "configuracao_corpo_retencao", "orientacao_instalacao", "categoria_594",
             "categoria_borboleta", "face_a_face", "configuracao_disco",
             "posicionador", "ip", "ip_posicionador", "ip_solenoide", "ip_chave_fim_curso", "ip_sensor_posicao",
             "filtro", "indicador_posicao", "tubing",
             "chave_fim_curso", "valvula_solenoide", "valvula_lock_up", "sensor_posicao", "valvula_escape_rapido",
-            "caracteristicas", "dreno", "vent", "alivio_externo", "hot_disconnect", "placa_identificacao", "flange", "anexo_nbr",
+            "caracteristicas", "dreno", "vent", "alivio_externo", "hot_disconnect", "contra_peso", "placa_identificacao", "flange", "anexo_nbr",
             "posicao_falha", "tensao", "fase", "frequencia",
             "observacao",
         ] + _INSTR_ELET_FIELDS
@@ -67,6 +68,10 @@ class ValvulaForm(forms.ModelForm):
             "revestimento": forms.Select(attrs={"class": "form-select"}),
             "tipo_castelo": forms.Select(attrs={"class": "form-select"}),
             "juncao_corpo_castelo": forms.Select(attrs={"class": "form-select"}),
+            "tipo_retencao": forms.Select(attrs={"class": "form-select"}),
+            "configuracao_corpo_retencao": forms.Select(attrs={"class": "form-select"}),
+            "orientacao_instalacao": forms.Select(attrs={"class": "form-select"}),
+            "categoria_594": forms.Select(attrs={"class": "form-select"}),
             "categoria_borboleta": forms.Select(attrs={"class": "form-select"}),
             "face_a_face": forms.Select(attrs={"class": "form-select"}),
             "configuracao_disco": forms.Select(attrs={"class": "form-select"}),
@@ -88,6 +93,7 @@ class ValvulaForm(forms.ModelForm):
             "vent": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "alivio_externo": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "hot_disconnect": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "contra_peso": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "posicao_falha": forms.Select(attrs={"class": "form-select"}),
             "tensao": forms.Select(attrs={"class": "form-select"}),
             "fase": forms.Select(attrs={"class": "form-select"}),
@@ -100,7 +106,7 @@ class ValvulaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         campos_bool = ["nbr", "valvula_alivio", "dispositivo_antiestatico",
                        "baixa_emissao_fugitiva", "indicador_posicao", "dreno", "vent", "alivio_externo",
-                       "hot_disconnect"]
+                       "hot_disconnect", "contra_peso"]
         if tipo_valvula:
             campos_visiveis = Valvula.CAMPOS_POR_TIPO.get(tipo_valvula, [])
             for campo in self.fields:

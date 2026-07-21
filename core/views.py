@@ -51,9 +51,20 @@ _VED_NBR_LABELS = {
 }
 
 
+def _junta_categoria(data):
+    """Valor de 'Categoria da Junta' (materiais, tipo_material=JUNTA) — pra Gaveta/Globo/
+    Retenção/Globo Controle é o corpo/castelo (Junta Espiralada/RTJ/Pressure Seal/Castelo
+    Soldado), lido pelas regras de norma no lugar da Vedação Sede/Tampa (campo exclusivo
+    de Esfera, ver templates/core/index.html vedacao-container)."""
+    for m in data.get("materiais", []):
+        if m.get("tipo_material") == "JUNTA":
+            return m.get("material") or ""
+    return ""
+
+
 def _validar_vedacao_nbr_classe(tipo_valvula, data):
-    """Para Gaveta/Retenção com NBR 15827, restringe a vedação corpo/tampa conforme a classe.
-    Retorna JsonResponse de erro (400) se inválido, ou None se ok."""
+    """Para Gaveta/Retenção com NBR 15827, restringe a categoria da junta (corpo/castelo)
+    conforme a classe. Retorna JsonResponse de erro (400) se inválido, ou None se ok."""
     if tipo_valvula not in ("GAVETA", "RETENCAO") or not data.get("nbr"):
         return None
     classe = data.get("classe")
@@ -61,11 +72,10 @@ def _validar_vedacao_nbr_classe(tipo_valvula, data):
     if not permitidas:
         return None
     tipo_nome = "Gaveta" if tipo_valvula == "GAVETA" else "Retenção"
-    for ved in data.get("vedacoes", []):
-        ved_val = ved.get("vedacao_junta") or ved.get("vedacao_corpo_tampa")
-        if ved_val and ved_val not in permitidas:
-            opts = ", ".join(_VED_NBR_LABELS.get(v, v) for v in permitidas)
-            return JsonResponse({"success": False, "errors": {"vedacoes": f"Para {tipo_nome} com NBR 15827 e classe {classe}, a vedação deve ser: {opts}"}}, status=400)
+    ved_val = _junta_categoria(data)
+    if ved_val and ved_val not in permitidas:
+        opts = ", ".join(_VED_NBR_LABELS.get(v, v) for v in permitidas)
+        return JsonResponse({"success": False, "errors": {"materiais": f"Para {tipo_nome} com NBR 15827 e classe {classe}, a categoria da junta deve ser: {opts}"}}, status=400)
     return None
 
 
@@ -930,6 +940,7 @@ def pesquisa_avancada_api(request):
         "tipo_valvula", "fabricante", "norma", "diametro", "classe", "tipo_extremidade",
         "tipo_ranhura", "tipo_montagem", "tipo_passagem", "tipo_acionamento", "marca_atuador", "flange_acoplamento",
         "construcao_corpo", "dib", "tipo_castelo", "juncao_corpo_castelo",
+        "tipo_retencao", "configuracao_corpo_retencao", "orientacao_instalacao", "categoria_594",
         "uso_geral", "certificacao_sil", "nace", "revestimento", "categoria_borboleta",
         "face_a_face", "configuracao_disco", "posicionador",
         "ip_posicionador", "ip_solenoide", "ip_chave_fim_curso", "ip_sensor_posicao", "filtro",
@@ -938,7 +949,7 @@ def pesquisa_avancada_api(request):
     ]
     BOOL_FIELDS = [
         "nbr", "valvula_alivio", "dispositivo_antiestatico",
-        "baixa_emissao_fugitiva", "hot_disconnect",
+        "baixa_emissao_fugitiva", "hot_disconnect", "contra_peso",
     ]
 
     for campo in TEXT_FIELDS_EXACT:
@@ -1035,6 +1046,10 @@ def valvula_detalhe_api(request, pk):
         "revestimento": valvula.revestimento or "",
         "tipo_castelo": valvula.tipo_castelo or "",
         "juncao_corpo_castelo": valvula.juncao_corpo_castelo or "",
+        "tipo_retencao": valvula.tipo_retencao or "",
+        "configuracao_corpo_retencao": valvula.configuracao_corpo_retencao or "",
+        "orientacao_instalacao": valvula.orientacao_instalacao or "",
+        "categoria_594": valvula.categoria_594 or "",
         "categoria_borboleta": valvula.categoria_borboleta or "",
         "face_a_face": valvula.face_a_face or "",
         "configuracao_disco": valvula.configuracao_disco or "",
@@ -1059,6 +1074,7 @@ def valvula_detalhe_api(request, pk):
         "vent": valvula.vent,
         "alivio_externo": valvula.alivio_externo,
         "hot_disconnect": valvula.hot_disconnect,
+        "contra_peso": valvula.contra_peso,
         "placa_identificacao": valvula.placa_identificacao or "",
         "flange": valvula.flange or "",
         "anexo_nbr": valvula.anexo_nbr or "",
@@ -1393,6 +1409,10 @@ def opcoes_por_tipo(request):
         "categoria_borboleta": list(Valvula.CATEGORIA_BORBOLETA) if tipo == "BORBOLETA" else [],
         "face_a_face": list(Valvula.FACE_A_FACE) if tipo == "BORBOLETA" else [],
         "configuracao_disco": list(Valvula.CONFIGURACAO_DISCO) if tipo == "BORBOLETA" else [],
+        "tipo_retencao": list(Valvula.TIPO_RETENCAO) if tipo == "RETENCAO" else [],
+        "configuracao_corpo_retencao": list(Valvula.CONFIGURACAO_CORPO_RETENCAO) if tipo == "RETENCAO" else [],
+        "orientacao_instalacao": list(Valvula.ORIENTACAO_INSTALACAO_RETENCAO) if tipo == "RETENCAO" else [],
+        "categoria_594": list(Valvula.CATEGORIA_594) if tipo == "RETENCAO" else [],
         "posicionador": list(Valvula.POSICIONADOR),
         "filtro": list(Valvula.FILTRO) if tipo == "GLOBO_CONTROLE" else [],
         "tubing": list(Valvula.TUBING) if tipo == "GLOBO_CONTROLE" else [],
@@ -1430,7 +1450,7 @@ def materiais_por_tipo(request):
 
 # ── CRUD Válvulas ────────────────────────────────────────────────────────────
 
-CAMPOS_BOOL_VALVULA = ["nbr", "valvula_alivio", "dispositivo_antiestatico", "baixa_emissao_fugitiva", "indicador_posicao", "dreno", "vent", "alivio_externo", "hot_disconnect"]
+CAMPOS_BOOL_VALVULA = ["nbr", "valvula_alivio", "dispositivo_antiestatico", "baixa_emissao_fugitiva", "indicador_posicao", "dreno", "vent", "alivio_externo", "hot_disconnect", "contra_peso"]
 
 # Subcategorias de instrumentação: (sufixo do campo, rótulo, campo "principal").
 SUBCAT_INSTRUMENTACAO = [
@@ -1469,6 +1489,7 @@ CAMPOS_TEXTO_DUP = [
     "tipo_passagem", "tipo_acionamento", "marca_atuador", "flange_acoplamento", "tipo_montagem", "construcao_corpo",
     "pintura_atuador", "cor_atuador", "norma_pintura_atuador", "condicao_pintura_atuador",
     "tipo_castelo", "juncao_corpo_castelo", "dib", "uso_geral",
+    "tipo_retencao", "configuracao_corpo_retencao", "orientacao_instalacao", "categoria_594",
     "certificacao_sil", "nace", "revestimento", "categoria_borboleta", "face_a_face",
     "configuracao_disco", "posicionador", "ip", "ip_posicionador", "ip_solenoide", "ip_chave_fim_curso", "ip_sensor_posicao", "filtro", "tubing",
     "chave_fim_curso", "valvula_solenoide", "valvula_lock_up", "sensor_posicao", "valvula_escape_rapido",
@@ -1483,6 +1504,12 @@ def _aplicar_regras_automaticas(tipo_valvula, data):
     # Regra: Retenção → junção corpo/castelo sempre Aparafusado
     if tipo_valvula == "RETENCAO":
         data["juncao_corpo_castelo"] = "APARAFUSADO"
+
+    # Regra: Retenção tipo Pistão → orientação de instalação só Horizontal (única
+    # opção válida pra esse tipo construtivo — força, sem input manual, mesmo padrão
+    # da junção corpo/castelo acima).
+    if tipo_valvula == "RETENCAO" and data.get("tipo_retencao") == "PISTAO":
+        data["orientacao_instalacao"] = "HORIZONTAL"
 
     # Regra: Gaveta + norma API 600 ou ISO 10434 → junção corpo/castelo sempre Aparafusado
     # (única opção dentro do escopo de ambas as normas — "bolted bonnet", Seção 1)
@@ -1607,6 +1634,32 @@ def _validar_regras_valvula(tipo_valvula, data):
     # Regra: Função = Controle → característica não pode ser On - Off (esta é exclusiva de Bloqueio)
     if data.get("funcao") == "CONTROLE" and (data.get("caracteristicas") or "") == "On - Off":
         return JsonResponse({"success": False, "errors": {"caracteristicas": "Para Função = Controle, a característica não pode ser On - Off"}}, status=400)
+
+    # Regra: Retenção — tipo construtivo (Pistão/Esfera/Disco) restringe configuração do
+    # corpo e orientação de instalação:
+    #   Pistão -> configuração Angular/Reto; orientação só Horizontal
+    #   Esfera -> configuração Angular/Reto; orientação Horizontal/Vertical
+    #   Disco  -> configuração só Reto; orientação Horizontal/Vertical
+    _RETENCAO_CONFIG_POR_TIPO = {
+        "PISTAO": {"ANGULAR", "RETO"},
+        "ESFERA": {"ANGULAR", "RETO"},
+        "DISCO": {"RETO"},
+    }
+    _RETENCAO_ORIENTACAO_POR_TIPO = {
+        "PISTAO": {"HORIZONTAL"},
+        "ESFERA": {"HORIZONTAL", "VERTICAL"},
+        "DISCO": {"HORIZONTAL", "VERTICAL"},
+    }
+    if tipo_valvula == "RETENCAO":
+        _tipo_ret = data.get("tipo_retencao") or ""
+        _config_ret = data.get("configuracao_corpo_retencao") or ""
+        _orient_ret = data.get("orientacao_instalacao") or ""
+        if _tipo_ret in _RETENCAO_CONFIG_POR_TIPO and _config_ret and _config_ret not in _RETENCAO_CONFIG_POR_TIPO[_tipo_ret]:
+            _opts_config = "/".join(v.capitalize() for v in _RETENCAO_CONFIG_POR_TIPO[_tipo_ret])
+            return JsonResponse({"success": False, "errors": {"configuracao_corpo_retencao": f"Para Retenção tipo {_tipo_ret.capitalize()}, a configuração do corpo deve ser {_opts_config}"}}, status=400)
+        if _tipo_ret in _RETENCAO_ORIENTACAO_POR_TIPO and _orient_ret and _orient_ret not in _RETENCAO_ORIENTACAO_POR_TIPO[_tipo_ret]:
+            _opts_orient = "/".join(v.capitalize() for v in _RETENCAO_ORIENTACAO_POR_TIPO[_tipo_ret])
+            return JsonResponse({"success": False, "errors": {"orientacao_instalacao": f"Para Retenção tipo {_tipo_ret.capitalize()}, a orientação de instalação deve ser {_opts_orient}"}}, status=400)
 
     # Regra: pintura com norma (não Padrão Fabricante/Sem Pintura) exige cor específica.
     _PINTURA_MODOS = ("", "PADRÃO FABRICANTE", "SEM PINTURA")
@@ -1967,18 +2020,24 @@ def _validar_regras_valvula(tipo_valvula, data):
                 if _norma and _norma not in {"API 609", "ASME B16.34"}:
                     return JsonResponse({"success": False, "errors": {"norma": "Para Borboleta com NBR 15827, Tri-Excêntrica (Wafer/Lug/Flangeada) e corpo fora de A105/A182/A350/B564/B865, a norma deve ser API 609 ou ASME B16.34"}}, status=400)
 
-    # Regra: Borboleta + norma MSS SP-67 → diâmetro 1½"-72" (Seção 1.3); classe 125/150/PMT
-    # (Seções 3.1-3.3 só cobrem flange até Classe 150 — ASME B16.1 Cl 25/125, B16.5 Cl 150,
-    # B16.24/B16.42 Cl 150, B16.47 Cl 150 Série A; 4.3 diz que rating de flange fora dessa
-    # lista está fora do escopo. PMT admitido pelo teste de prova alternativo de 4.1.1.3/
-    # 4.1.3.3/4.1.4.3, mesmo caso do CWP de API 609 Categoria A). Roda depois das regras de
-    # NBR Bi/Tri-Excêntrica (que restringem norma por corpo e devem falar primeiro).
+    # Regra: Borboleta + norma MSS SP-67 → diâmetro em lista fechada (1½" a 72", com
+    # buracos — 5", 64", 66", 72" não existem em DIAMETROS/DIAMETROS_POR_TIPO, únicos
+    # pra essa norma); classe 125/150/PMT (Seções 3.1-3.3 só cobrem flange até Classe
+    # 150 — ASME B16.1 Cl 25/125, B16.5 Cl 150, B16.24/B16.42 Cl 150, B16.47 Cl 150
+    # Série A; 4.3 diz que rating de flange fora dessa lista está fora do escopo. PMT
+    # admitido pelo teste de prova alternativo de 4.1.1.3/4.1.3.3/4.1.4.3, mesmo caso
+    # do CWP de API 609 Categoria A). Roda depois das regras de NBR Bi/Tri-Excêntrica
+    # (que restringem norma por corpo e devem falar primeiro).
     _CLASSES_MSS_SP67 = {"125", "150", "PMT"}
+    _DIAMETROS_MSS_SP67 = {
+        '1 1/2"', '2"', '2 1/2"', '3"', '4"', '5"', '6"', '8"', '10"', '12"',
+        '14"', '16"', '18"', '20"', '24"', '30"', '36"', '42"', '48"', '54"',
+        '60"', '64"', '66"', '72"',
+    }
     if tipo_valvula == "BORBOLETA" and data.get("norma") == "MSS SP67":
         _diam = data.get("diametro")
-        _dn = _parse_diametro(_diam) if _diam else None
-        if _dn is not None and _dn < 1.5:
-            return JsonResponse({"success": False, "errors": {"diametro": "Para Borboleta com norma MSS SP-67, o diâmetro deve ser de 1 1/2\" a 72\""}}, status=400)
+        if _diam and _diam not in _DIAMETROS_MSS_SP67:
+            return JsonResponse({"success": False, "errors": {"diametro": "Para Borboleta com norma MSS SP-67, o diâmetro deve ser 1 1/2\", 2\", 2 1/2\", 3\", 4\", 5\", 6\", 8\", 10\", 12\", 14\", 16\", 18\", 20\", 24\", 30\", 36\", 42\", 48\", 54\", 60\", 64\", 66\" ou 72\""}}, status=400)
         _classe = data.get("classe")
         if _classe and _classe not in _CLASSES_MSS_SP67:
             return JsonResponse({"success": False, "errors": {"classe": "Para Borboleta com norma MSS SP-67, a classe deve ser 125, 150 ou PMT"}}, status=400)
@@ -2550,10 +2609,8 @@ def _validar_regras_valvula(tipo_valvula, data):
                 return JsonResponse({"success": False, "errors": {"diametro": 'Para norma ISO 15761 com extremidade Socket-Welding/Rosca, o diâmetro máximo é 2 1/2"'}}, status=400)
         if data.get("juncao_corpo_castelo") == "ROSCADO" and _classe_15761 == "1500":
             return JsonResponse({"success": False, "errors": {"juncao_corpo_castelo": "Para norma ISO 15761, junção Roscado (union nut) só é permitida até classe 800 (não cobre classe 1500)"}}, status=400)
-        for _ved_15761 in data.get("vedacoes", []):
-            _ved_val_15761 = _ved_15761.get("vedacao_junta") or _ved_15761.get("vedacao_corpo_tampa")
-            if _ved_val_15761 == "PRESSURE SEAL":
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma ISO 15761, a vedação não pode ser Pressure Seal (5.5.1 lista só 4 métodos de junção corpo/castelo — bolting, welding, threaded com seal weld, threaded union nut — pressure seal não é um deles)"}}, status=400)
+        if _junta_categoria(data) == "PRESSURE SEAL":
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma ISO 15761, a categoria da junta não pode ser Pressure Seal (5.5.1 lista só 4 métodos de junção corpo/castelo — bolting, welding, threaded com seal weld, threaded union nut — pressure seal não é um deles)"}}, status=400)
 
     # ── BS 1873 (Cláusulas 1, 4, 6, 9.3, Apêndice A) ──────────────────────────
     # Steel globe and globe stop and check valves (flanged/butt-welding ends) — só Globo
@@ -2598,10 +2655,8 @@ def _validar_regras_valvula(tipo_valvula, data):
         # juncao_corpo_castelo já vem forçado p/ APARAFUSADO por _aplicar_regras_automaticas
         # (única opção dentro do escopo — 9.3 "the body to bonnet connection shall be
         # flanged"); nada a validar aqui.
-        for _ved_1873 in data.get("vedacoes", []):
-            _ved_val_1873 = _ved_1873.get("vedacao_junta") or _ved_1873.get("vedacao_corpo_tampa")
-            if _ved_val_1873 in ("CASTELO SOLDADO", "PRESSURE SEAL"):
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma BS 1873, a vedação deve ser Junta Espiralada ou RTJ (FJA) (9.3 restringe o bonnet-to-body joint a facings de flange — male-and-female/tongue-and-groove/ring joint, ou flat face só na classe 150 — sem opção soldada nem pressure-seal)"}}, status=400)
+        if _junta_categoria(data) in ("CASTELO SOLDADO", "PRESSURE SEAL"):
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma BS 1873, a categoria da junta deve ser Junta Espiralada ou RTJ (FJA) (9.3 restringe o bonnet-to-body joint a facings de flange — male-and-female/tongue-and-groove/ring joint, ou flat face só na classe 150 — sem opção soldada nem pressure-seal)"}}, status=400)
 
     # ── API 623 (Seção 1) ────────────────────────────────────────────────────
     # Steel Globe Valves—Flanged and Butt-Welding Ends, Bolted Bonnets (só Globo oferece
@@ -2646,10 +2701,8 @@ def _validar_regras_valvula(tipo_valvula, data):
             return JsonResponse({"success": False, "errors": {"diametro": 'Para norma API 623, o diâmetro deve ser de 2" a 24" (a norma não cobre 1/2" a 1 1/2", 22" nem acima de 24")'}}, status=400)
         if _classe_623 == "2500" and _diam_623 and _parse_diametro(_diam_623) > 12:
             return JsonResponse({"success": False, "errors": {"diametro": 'Para norma API 623 e classe 2500, o diâmetro máximo é 12" (a Tabela 1 de espessura mínima de parede não cobre Classe 2500 acima de NPS 12)'}}, status=400)
-        for _ved_623 in data.get("vedacoes", []):
-            _ved_val_623 = _ved_623.get("vedacao_junta") or _ved_623.get("vedacao_corpo_tampa")
-            if _ved_val_623 in ("CASTELO SOLDADO", "PRESSURE SEAL"):
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma API 623, a vedação deve ser Junta Espiralada ou RTJ (FJA) (5.5.1/5.5.2 restringem o bonnet-to-body joint a facings de flange — raised face/tongue-and-groove/spigot-and-recess/ring-joint — sem opção soldada nem pressure-seal)"}}, status=400)
+        if _junta_categoria(data) in ("CASTELO SOLDADO", "PRESSURE SEAL"):
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma API 623, a categoria da junta deve ser Junta Espiralada ou RTJ (FJA) (5.5.1/5.5.2 restringem o bonnet-to-body joint a facings de flange — raised face/tongue-and-groove/spigot-and-recess/ring-joint — sem opção soldada nem pressure-seal)"}}, status=400)
 
     # ── API 600 (Seção 1) ────────────────────────────────────────────────────
     # Steel Gate Valves—Flanged and Butt-welding Ends, Bolted Bonnets (só Gaveta oferece
@@ -2683,13 +2736,10 @@ def _validar_regras_valvula(tipo_valvula, data):
         if _diam_600 and _diam_600 not in _DIAMETROS_API600:
             return JsonResponse({"success": False, "errors": {"diametro": 'Para norma API 600, o diâmetro deve ser de 1" a 42" (a norma não cobre 1/2", 3/4", 22" nem acima de 42")'}}, status=400)
         # 5.5.11 cobre bonnet pressure-seal como opção dentro do escopo, mas "Castelo
-        # Soldado" na vedação é bonnet SOLDADO (views.py:2966 traduz p/ "Welded Bonnet")
-        # — contradiz o bonnet aparafusado da Seção 1. Lê vedacao_junta com fallback pra
-        # vedacao_corpo_tampa (o frontend manda o valor em vedacao_junta).
-        for _ved_600 in data.get("vedacoes", []):
-            _ved_val_600 = _ved_600.get("vedacao_junta") or _ved_600.get("vedacao_corpo_tampa")
-            if _ved_val_600 == "CASTELO SOLDADO":
-                return JsonResponse({"success": False, "errors": {"vedacoes": 'Para norma API 600, a vedação não pode ser Castelo Soldado (a norma cobre só "bolted bonnet")'}}, status=400)
+        # Soldado" na categoria da junta é bonnet SOLDADO — contradiz o bonnet aparafusado
+        # da Seção 1. Lê a categoria da junta (materiais, tipo_material=JUNTA).
+        if _junta_categoria(data) == "CASTELO SOLDADO":
+            return JsonResponse({"success": False, "errors": {"materiais": 'Para norma API 600, a categoria da junta não pode ser Castelo Soldado (a norma cobre só "bolted bonnet")'}}, status=400)
 
     # ── ISO 10434 (Seção 1) ──────────────────────────────────────────────────
     # Bolted Bonnet Steel Gate Valves (só Gaveta oferece a norma). É a versão ISO/EN da
@@ -2723,10 +2773,8 @@ def _validar_regras_valvula(tipo_valvula, data):
         _diam_10434 = data.get("diametro") or ""
         if _diam_10434 and _diam_10434 not in _DIAMETROS_ISO10434:
             return JsonResponse({"success": False, "errors": {"diametro": 'Para norma ISO 10434, o diâmetro deve ser de 1" a 24" (a norma não cobre 1/2", 3/4", 22" nem acima de 24")'}}, status=400)
-        for _ved_10434 in data.get("vedacoes", []):
-            _ved_val_10434 = _ved_10434.get("vedacao_junta") or _ved_10434.get("vedacao_corpo_tampa")
-            if _ved_val_10434 in ("CASTELO SOLDADO", "PRESSURE SEAL"):
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma ISO 10434, a vedação deve ser Junta Espiralada ou RTJ (FJA) (a norma restringe o bonnet-to-body joint a flange e junta, sem opção soldada nem pressure-seal)"}}, status=400)
+        if _junta_categoria(data) in ("CASTELO SOLDADO", "PRESSURE SEAL"):
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma ISO 10434, a categoria da junta deve ser Junta Espiralada ou RTJ (FJA) (a norma restringe o bonnet-to-body joint a flange e junta, sem opção soldada nem pressure-seal)"}}, status=400)
 
     # ── API 602 (Seção 1) ────────────────────────────────────────────────────
     # Gate, Globe, and Check Valves for Sizes DN 100 (NPS 4) and Smaller (Gaveta, Globo
@@ -2773,10 +2821,8 @@ def _validar_regras_valvula(tipo_valvula, data):
                 return JsonResponse({"success": False, "errors": {"diametro": 'Para norma API 602 com extremidade Socket-Welding/Rosca/Niple, o diâmetro máximo é 2 1/2"'}}, status=400)
         if data.get("juncao_corpo_castelo") == "ROSCADO" and _classe_602 == "1500":
             return JsonResponse({"success": False, "errors": {"juncao_corpo_castelo": "Para norma API 602, junção Roscado (union nut) só é permitida até classe 800 (não cobre classe 1500)"}}, status=400)
-        for _ved_602 in data.get("vedacoes", []):
-            _ved_val_602 = _ved_602.get("vedacao_junta") or _ved_602.get("vedacao_corpo_tampa")
-            if _ved_val_602 == "PRESSURE SEAL":
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma API 602, a vedação não pode ser Pressure Seal (5.5.1 lista só 4 métodos de junção corpo/castelo — bolting, welding, threaded com seal weld, threaded union nut — pressure seal não é um deles)"}}, status=400)
+        if _junta_categoria(data) == "PRESSURE SEAL":
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma API 602, a categoria da junta não pode ser Pressure Seal (5.5.1 lista só 4 métodos de junção corpo/castelo — bolting, welding, threaded com seal weld, threaded union nut — pressure seal não é um deles)"}}, status=400)
 
     # ── BS 1868 (Cláusulas 1, 4, 6, 9.3) ─────────────────────────────────────
     # Steel check valves (flanged and butt-welding ends) — só Retenção oferece a norma
@@ -2812,38 +2858,39 @@ def _validar_regras_valvula(tipo_valvula, data):
         _diam_1868 = data.get("diametro") or ""
         if _diam_1868 and _diam_1868 not in _DIAMETROS_BS1868:
             return JsonResponse({"success": False, "errors": {"diametro": 'Para norma BS 1868, o diâmetro deve ser de 1/2" a 24" (a norma não cobre 22" nem acima de 24")'}}, status=400)
-        for _ved_1868 in data.get("vedacoes", []):
-            _ved_val_1868 = _ved_1868.get("vedacao_junta") or _ved_1868.get("vedacao_corpo_tampa")
-            if _ved_val_1868 in ("CASTELO SOLDADO", "PRESSURE SEAL"):
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma BS 1868, a vedação deve ser Junta Espiralada ou RTJ (FJA) (9.3: body-to-cover connection é male-and-female/tongue-and-groove/ring-joint, sem opção soldada nem pressure-seal)"}}, status=400)
+        if _junta_categoria(data) in ("CASTELO SOLDADO", "PRESSURE SEAL"):
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma BS 1868, a categoria da junta deve ser Junta Espiralada ou RTJ (FJA) (9.3: body-to-cover connection é male-and-female/tongue-and-groove/ring-joint, sem opção soldada nem pressure-seal)"}}, status=400)
 
     # ── API 594 (Seção 1) ──────────────────────────────────────────────────
     # Check Valves: Flanged, Lug, Wafer, and Butt-welding — só Retenção oferece a norma
     # (NORMA_RETENCAO). O próprio título já é o escopo de extremidade: Flange, Lug, Wafer
     # ou Butt-Welding — sem Socket-Welding/Rosca/Niple/Gray Loc Hub. A norma descreve dois
-    # tipos construtivos sem campo que os distinga no modelo: Type 'A' (curto: wafer/lug/
-    # duplo-flange) e Type 'B' (longo: bolted cover, flange ou butt-welding). Flange serve
-    # aos dois tipos — usa o teto mais permissivo (Type A) quando ambíguo; Butt-Welding só
-    # existe no Type 'B', usa sempre o teto do Type B.
-    #   - classe (Seção 1): 150/300/600/900/1500/2500 — sem 800 (a norma nunca lista
-    #     Class 800) nem PN. Classes 125/250 (ferro fundido/nodular) não existem no
-    #     CLASSES_RETENCAO_GLOBO do modelo (mesmo buraco do Class 400 na ISO 14313/BS 1873)
-    #   - diâmetro mínimo DN 50 (NPS 2) pra qualquer classe/extremidade — "Sizes: NPS 2,
-    #     2 1/2, 3, ..." não desce de NPS 2 (DN 90/NPS 3 1/2 e DN 125/NPS 5 são "non-
-    #     preferred... usage is discouraged" — linguagem de recomendação, não trava; e nem
-    #     existem no DIAMETROS_RETENCAO do modelo)
-    #   - teto por classe/extremidade:
-    #       150/300 → NPS 48 (Wafer/Lug/Flange) ou NPS 24 (Butt-Welding). DIAMETROS_
-    #         RETENCAO estendido até 48" (2026-07-17) pra bater com esse teto — antes
-    #         disso a opção nem existia no modelo (parava em 42")
-    #       600     → NPS 42 (Wafer/Lug/Flange) ou NPS 24 (Butt-Welding) — 42" é o próprio
-    #         teto do DIAMETROS_RETENCAO
-    #       900/1500 → NPS 24 pra qualquer extremidade (Type A e B coincidem nessa faixa)
-    #       2500    → NPS 12 pra qualquer extremidade (Type A e B coincidem)
-    #   - 5.1.14/6.3 (Type 'B'): body-to-cover joint é flat face (só Classe 150)/raised
-    #     face/tongue-and-groove/spigot-and-recess/ring-joint — nenhum soldado nem
-    #     pressure-seal → vedação (junta) não pode ser Castelo Soldado nem Pressure Seal
-    #     (mesma leitura já usada na BS 1868/ISO 10434)
+    # tipos construtivos, agora um campo próprio (`categoria_594`, Tipo A/Tipo B):
+    #   - Tipo A (curto): "wafer, lug, or double flanged; single plate or dual plate"
+    #     (Seção 1/5.1.3) — sem Butt-Welding. Faixa (Seção 1): a) Classe 125/250 e
+    #     b) 150/300: DN 50-1200/NPS 2-48; c) Classe 600: DN 50-1050/NPS 2-42;
+    #     d) Classe 900/1500: DN 50-600/NPS 2-24; e) Classe 2500: DN 50-300/NPS 2-12
+    #     (Classes 125/250 não existem no CLASSES_RETENCAO_GLOBO do modelo)
+    #   - Tipo B (longo): "bolted cover swing check valves... flanged or butt-welding"
+    #     (Seção 1/5.1.3) — sem Wafer/Lug. Faixa: a) Classe 150-1500: DN 50-600/NPS 2-24;
+    #     b) Classe 2500: DN 50-300/NPS 2-12 (mesmo teto pra Flange ou Butt-Welding —
+    #     a norma não diferencia dimensão por extremidade dentro do Tipo B)
+    #   - Sem `categoria_594` preenchido (dado legado/campo ainda não selecionado):
+    #     mantém o comportamento antigo — extremidade aceita as 4 opções, teto usa a
+    #     coluna B (Butt-Welding) ou a mais permissiva (demais) por inferência
+    #   - classe (Seção 1, comum aos dois tipos): 150/300/600/900/1500/2500 — sem 800
+    #     (a norma nunca lista Class 800) nem PN. Classes 125/250 (ferro fundido/nodular)
+    #     não existem no CLASSES_RETENCAO_GLOBO do modelo (mesmo buraco do Class 400 na
+    #     ISO 14313/BS 1873)
+    #   - diâmetro mínimo DN 50 (NPS 2) pra qualquer classe/tipo/extremidade — "Sizes:
+    #     NPS 2, 2 1/2, 3, ..." não desce de NPS 2 (DN 90/NPS 3 1/2 e DN 125/NPS 5 são
+    #     "non-preferred... usage is discouraged" — linguagem de recomendação, não trava;
+    #     e nem existem no DIAMETROS_RETENCAO do modelo)
+    #   - 5.1.14/6.3 (Tipo B apenas — "Type 'B' valves shall have a bolted cover design"):
+    #     body-to-cover joint é flat face (só Classe 150)/raised face/tongue-and-groove/
+    #     spigot-and-recess/ring-joint — nenhum soldado nem pressure-seal → categoria da
+    #     junta não pode ser Castelo Soldado nem Pressure Seal (mesma leitura já usada na
+    #     BS 1868/ISO 10434). Tipo A não tem bolted cover no escopo — regra não se aplica
     _CLASSES_594 = {"150", "300", "600", "900", "1500", "2500"}
     _TETO_594 = {
         "150": {"BW": 24, "OUTROS": 48}, "300": {"BW": 24, "OUTROS": 48},
@@ -2853,26 +2900,38 @@ def _validar_regras_valvula(tipo_valvula, data):
     }
     if tipo_valvula == "RETENCAO" and data.get("norma") == "API 594":
         _classe_594 = data.get("classe") or ""
+        _cat_594 = data.get("categoria_594") or ""
         _ext_594 = (data.get("tipo_extremidade") or "").upper()
-        _wlf_594 = _ext_594 in ("WAFER", "LUG") or _ext_594.startswith("FLANGE")
+        _wl_594 = _ext_594 in ("WAFER", "LUG")
+        _flange_594 = _ext_594.startswith("FLANGE")
         _bw_594 = _ext_594.startswith("BUTT-WELDING")
         if _classe_594 and _classe_594 not in _CLASSES_594:
             return JsonResponse({"success": False, "errors": {"classe": "Para norma API 594, a classe deve ser 150, 300, 600, 900, 1500 ou 2500"}}, status=400)
-        if _ext_594 and not (_wlf_594 or _bw_594):
+        if _ext_594 and not (_wl_594 or _flange_594 or _bw_594):
             return JsonResponse({"success": False, "errors": {"tipo_extremidade": "Para norma API 594, a extremidade deve ser Flange, Lug, Wafer ou Butt-Welding (a norma não cobre Socket-Welding/Rosca/Niple/Gray Loc Hub)"}}, status=400)
+        if _cat_594 == "TIPO A" and _ext_594 and _bw_594:
+            return JsonResponse({"success": False, "errors": {"tipo_extremidade": "Para API 594 Tipo A, a extremidade não pode ser Butt-Welding (5.1.3: Tipo A é wafer, lug ou duplo-flangeado — Butt-Welding só existe no Tipo B)"}}, status=400)
+        if _cat_594 == "TIPO B" and _wl_594:
+            return JsonResponse({"success": False, "errors": {"tipo_extremidade": "Para API 594 Tipo B, a extremidade deve ser Flange ou Butt-Welding (5.1.3: Tipo B é bolted cover — não cobre Wafer/Lug)"}}, status=400)
         _diam_594 = data.get("diametro")
         _dn_594 = _parse_diametro(_diam_594) if _diam_594 else None
         if _dn_594 is not None:
             if _dn_594 < 2:
                 return JsonResponse({"success": False, "errors": {"diametro": 'Para norma API 594, o diâmetro mínimo é 2"'}}, status=400)
             if _classe_594 in _TETO_594:
-                _teto_594 = _TETO_594[_classe_594]["BW" if _bw_594 else "OUTROS"]
+                if _cat_594 == "TIPO B":
+                    _teto_594 = _TETO_594[_classe_594]["BW"]
+                    _desc_594 = "Tipo B"
+                elif _cat_594 == "TIPO A":
+                    _teto_594 = _TETO_594[_classe_594]["OUTROS"]
+                    _desc_594 = "Tipo A"
+                else:
+                    _teto_594 = _TETO_594[_classe_594]["BW" if _bw_594 else "OUTROS"]
+                    _desc_594 = "Butt-Welding" if _bw_594 else "Flange/Lug/Wafer"
                 if _dn_594 > _teto_594:
-                    return JsonResponse({"success": False, "errors": {"diametro": f'Para norma API 594 com classe {_classe_594} e extremidade {"Butt-Welding" if _bw_594 else "Flange/Lug/Wafer"}, o diâmetro máximo é {_teto_594}"'}}, status=400)
-        for _ved_594 in data.get("vedacoes", []):
-            _ved_val_594 = _ved_594.get("vedacao_junta") or _ved_594.get("vedacao_corpo_tampa")
-            if _ved_val_594 in ("CASTELO SOLDADO", "PRESSURE SEAL"):
-                return JsonResponse({"success": False, "errors": {"vedacoes": "Para norma API 594, a vedação deve ser Junta Espiralada ou RTJ (FJA) (5.1.14 restringe o body-to-cover joint a facings de flange — flat face/raised face/tongue-and-groove/spigot-and-recess/ring-joint — sem opção soldada nem pressure-seal)"}}, status=400)
+                    return JsonResponse({"success": False, "errors": {"diametro": f'Para norma API 594 com classe {_classe_594} e {_desc_594}, o diâmetro máximo é {_teto_594}"'}}, status=400)
+        if _cat_594 == "TIPO B" and _junta_categoria(data) in ("CASTELO SOLDADO", "PRESSURE SEAL"):
+            return JsonResponse({"success": False, "errors": {"materiais": "Para norma API 594 Tipo B, a categoria da junta deve ser Junta Espiralada ou RTJ (FJA) (5.1.14 restringe o body-to-cover joint a facings de flange — flat face/raised face/tongue-and-groove/spigot-and-recess/ring-joint — sem opção soldada nem pressure-seal)"}}, status=400)
 
     # ── ASME B16.34 (2.1.1) ────────────────────────────────────────────────
     # Ficam por último de propósito: valem para qualquer tipo de válvula, então as regras
@@ -3219,7 +3278,7 @@ def valvula_excluir_lote(request):
 
 def _calc_rate_api6d(valvula, materiais, componentes):
     """Retorna o Rate de vazamento ISO 5208 ('A', 'C', 'D', 'G') ou '' quando a
-    norma não define rate (nem API 6D nem ISO 14313).
+    norma não define rate (nem API 6D, ISO 14313 nem BS 1868).
 
     API 6D (Anexo I, tabela por tipo de válvula):
       Rate A: Esfera com inserto de sede não-metálico (PEEK/PTFE/DEVLON/…).
@@ -3233,10 +3292,14 @@ def _calc_rate_api6d(valvula, materiais, componentes):
     (únicos tipos com campo de inserto de sede no modelo); demais tipos ficam
     sem rate (sem como saber se a sede é macia ou metálica).
 
+    BS 1868 (só Retenção oferece a norma): decisão de negócio (2026-07-21) —
+    limitada a Rate A/C, sem G (a norma não usa a tabela por tipo da API 6D):
+    com inserto de sede macio → Rate A; sem inserto → Rate C.
+
     Verifica duas fontes: ValvulaMaterial.tipo_material=='INSERTO_SEDE'
     e ComponentesInternos.inserto_rede — qualquer uma basta para Rate A.
     """
-    if valvula.norma not in ("API 6D", "ISO 14313"):
+    if valvula.norma not in ("API 6D", "ISO 14313", "BS 1868"):
         return ""
     _inserto_mat = next(
         (m.material.nome for m in materiais if m.tipo_material == "INSERTO_SEDE"),
@@ -3251,6 +3314,8 @@ def _calc_rate_api6d(valvula, materiais, componentes):
         if valvula.tipo_valvula in ("ESFERA", "RETENCAO"):
             return "A" if _tem_inserto else "D"
         return ""
+    if valvula.norma == "BS 1868":
+        return "A" if _tem_inserto else "C"
     # API 6D daqui pra baixo
     if valvula.tipo_valvula == "RETENCAO" and not _tem_inserto:
         return "G"
@@ -3364,13 +3429,14 @@ def valvula_preview(request):
         "tipo_passagem", "tipo_acionamento", "marca_atuador", "flange_acoplamento", "tipo_montagem", "construcao_corpo",
         "pintura_atuador", "cor_atuador", "norma_pintura_atuador", "condicao_pintura_atuador",
         "tipo_castelo", "juncao_corpo_castelo", "dib", "uso_geral",
+        "tipo_retencao", "configuracao_corpo_retencao", "orientacao_instalacao", "categoria_594",
         "certificacao_sil", "nace", "revestimento", "categoria_borboleta", "face_a_face",
         "configuracao_disco", "posicionador", "ip", "ip_posicionador", "ip_solenoide", "ip_chave_fim_curso", "ip_sensor_posicao", "filtro", "tubing",
         "chave_fim_curso", "valvula_solenoide", "valvula_lock_up", "sensor_posicao", "valvula_escape_rapido",
         "caracteristicas", "dreno", "vent", "alivio_externo", "placa_identificacao", "flange", "anexo_nbr",
         "posicao_falha", "tensao", "fase", "frequencia",
     ] + CAMPOS_CE + CAMPOS_ELET
-    campos_bool = ["nbr", "valvula_alivio", "dispositivo_antiestatico", "baixa_emissao_fugitiva", "indicador_posicao", "dreno", "vent", "alivio_externo", "hot_disconnect"]
+    campos_bool = ["nbr", "valvula_alivio", "dispositivo_antiestatico", "baixa_emissao_fugitiva", "indicador_posicao", "dreno", "vent", "alivio_externo", "hot_disconnect", "contra_peso"]
 
     # Válvula em memória (não salva) só para alimentar o template
     valvula = Valvula(tipo_valvula=tipo_valvula)
@@ -3490,6 +3556,19 @@ _VALOR_PT_EN = {
     # Categoria borboleta
     "CATEGORIA A": "Category A",
     "CATEGORIA B": "Category B",
+    # Categoria API 594 (Retenção) — Tipo A/Tipo B
+    "TIPO A": "Type A",
+    "TIPO B": "Type B",
+    # Retenção: tipo construtivo / configuração do corpo / orientação de instalação
+    # (mesmas chaves ESFERA/DISCO de outros dicionários, mas aqui é o tipo construtivo
+    # do obturador da Retenção, não o tipo de válvula)
+    "PISTAO": "Piston",
+    "ESFERA": "Ball",
+    "DISCO": "Disc",
+    "ANGULAR": "Angle",
+    "RETO": "Straight",
+    "HORIZONTAL": "Horizontal",
+    "VERTICAL": "Vertical",
     # Face a face
     "LUG": "Lug",
     "WAFER": "Wafer",
@@ -3744,8 +3823,11 @@ def _folha_labels(is_en):
         "lbl_bonnet":             "Bonnet" if is_en else "Castelo",
         "lbl_body_bonnet_joint":  "Body/Bonnet Joint" if is_en else "Juncao Corpo/Castelo",
         "lbl_category":           "Category" if is_en else "Categoria",
-        "lbl_face_to_face":       "Face to Face" if is_en else "Face a Face",
+        "lbl_face_to_face":       "Face to Face" if is_en else "Tipo de Conexão",
         "lbl_disc_config":        "Disc Config." if is_en else "Config. Disco",
+        "lbl_retencao_tipo":      "Check Type" if is_en else "Tipo",
+        "lbl_retencao_config":    "Body Configuration" if is_en else "Configuração do Corpo",
+        "lbl_retencao_orientacao": "Installation Orientation" if is_en else "Orientação de Instalação",
         "lbl_positioner":         "Power Supply Signal" if is_en else "Sinal de Alimentação",
         "lbl_ip":                 "Protection Rating" if is_en else "Grau de Proteção",
         "lbl_filter":             "Filter" if is_en else "Filtro",
@@ -3806,6 +3888,7 @@ def _folha_labels(is_en):
         "lbl_dreno":              "Drain" if is_en else "Dreno",
         "lbl_vent":               "Vent" if is_en else "Vent",
         "lbl_alivio_externo":     "External Relief" if is_en else "Alívio Externo",
+        "lbl_contra_peso":        "Counterweight" if is_en else "Contrapeso",
         "lbl_placa_identificacao":"Identification Plate" if is_en else "Placa de Identificação",
         "lbl_flange":             "Flange" if is_en else "Flange",
         "lbl_flange_acoplamento": "ISO 5211 Mounting Flange" if is_en else "Flange de Acoplamento ISO 5211",
@@ -3898,6 +3981,23 @@ def _folha_grupos_ctx(folha_grupos, L):
     return ctx
 
 
+_DN_NBR14788 = {
+    '1/2"': "15", '3/4"': "20", '1"': "25", '1 1/4"': "32", '1 1/2"': "40",
+    '2"': "50", '2 1/2"': "65", '3"': "80", '4"': "100", '6"': "150",
+    '8"': "200", '10"': "250", '12"': "300", '14"': "350", '16"': "400",
+    '18"': "450", '20"': "500",
+}
+
+
+def _formatar_diametro(valvula):
+    """NBR 14788 designa o diâmetro por DN, não NPS — exibe 'DN (NPS)' na folha."""
+    if valvula.norma == "NBR 14788":
+        dn = _DN_NBR14788.get(valvula.diametro)
+        if dn:
+            return f"{dn} ({valvula.diametro})"
+    return valvula.diametro
+
+
 def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L):
     """Monta os grupos da folha: 'Corpo e Internos' e 'Atuador'. Retorna lista de
     (categoria, [(item, valor), ...]) na ordem definida. SIL e demais campos de
@@ -3929,7 +4029,7 @@ def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L
     if "caracteristicas" in campos_visiveis:
         corpo.append((L["lbl_caracteristicas"], valvula.caracteristicas or "N/A"))
     if valvula.diametro:
-        corpo.append((L["lbl_diameter"], valvula.diametro))
+        corpo.append((L["lbl_diameter"], _formatar_diametro(valvula)))
     if valvula.classe:
         corpo.append((L["lbl_class"], valvula.classe))
     if "flange" in campos_visiveis:
@@ -3955,15 +4055,16 @@ def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L
         corpo.append((L["lbl_bore"], _t_valor_bi(valvula.tipo_passagem)))
     if valvula.construcao_corpo:
         corpo.append((L["lbl_body_construction"], _t_valor_bi(valvula.construcao_corpo)))
-    if valvula.norma in ("API 6D", "ISO 14313"):  # critério de aceitação
+    if valvula.norma in ("API 6D", "ISO 14313", "BS 1868"):  # critério de aceitação
         criterio = f"ISO 5208 — Rate {rate_api6d}" if rate_api6d else "ISO 5208"
         corpo.append((L["lbl_acceptance_criteria"], criterio))
-    # Vedação sede/tampa — entra logo abaixo do "Inserto da Sede".
+    # Vedação sede/tampa — entra logo abaixo do "Inserto da Sede". Só Esfera.
     _ved_val = ""
-    for v in vedacoes:
-        _ved_val = getattr(v, "vedacao_junta", "") or v.vedacao_corpo_tampa
-        if _ved_val:
-            break
+    if valvula.tipo_valvula == "ESFERA":
+        for v in vedacoes:
+            _ved_val = getattr(v, "vedacao_junta", "") or v.vedacao_corpo_tampa
+            if _ved_val:
+                break
     # Materiais na ordem pedida
     for tipo in ["CORPO_TAMPA", "OBTURADOR", "HASTE", "SEDE", "INSERTO_SEDE",
                  "MOLAS", "GAXETA", "PARAFUSOS", "PORCAS"]:
@@ -4008,6 +4109,14 @@ def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L
         corpo.append((L["lbl_bonnet"], _t_valor_bi(valvula.tipo_castelo)))
     if valvula.juncao_corpo_castelo:
         corpo.append((L["lbl_body_bonnet_joint"], _t_valor_bi(valvula.juncao_corpo_castelo)))
+    if valvula.tipo_retencao:
+        corpo.append((L["lbl_retencao_tipo"], _t_valor_bi(valvula.tipo_retencao)))
+    if valvula.configuracao_corpo_retencao:
+        corpo.append((L["lbl_retencao_config"], _t_valor_bi(valvula.configuracao_corpo_retencao)))
+    if valvula.orientacao_instalacao:
+        corpo.append((L["lbl_retencao_orientacao"], _t_valor_bi(valvula.orientacao_instalacao)))
+    if valvula.categoria_594:
+        corpo.append((L["lbl_category"], _t_valor_bi(valvula.categoria_594)))
     if valvula.categoria_borboleta:
         corpo.append((L["lbl_category"], _t_valor_bi(valvula.categoria_borboleta)))
     if valvula.configuracao_disco:
@@ -4107,8 +4216,8 @@ def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L
 def _build_folha_notas(valvula, L):
     """Monta as linhas (rótulo, valor) da seção de NOTAS: QSL, construção da sede
     (DIB), dispositivo antiestático, válvula de alívio, baixa emissão, indicador
-    de posição e uso geral. Documento único bilíngue. Bool sempre presente
-    (Sim/Não); texto só se preenchido."""
+    de posição, contrapeso e uso geral. Documento único bilíngue. Bool sempre
+    presente (Sim/Não); texto só se preenchido."""
     sim = L["lbl_yes"]
     nao = L["lbl_no"]
     campos_visiveis = Valvula.CAMPOS_POR_TIPO.get(valvula.tipo_valvula, [])
@@ -4132,6 +4241,8 @@ def _build_folha_notas(valvula, L):
         notas.append((L["lbl_position_indicator"], sim if valvula.indicador_posicao else nao))
     if "hot_disconnect" in campos_visiveis:
         notas.append((L["lbl_hot_disconnect"], sim if valvula.hot_disconnect else nao))
+    if "contra_peso" in campos_visiveis:
+        notas.append((L["lbl_contra_peso"], sim if valvula.contra_peso else nao))
     # Testada a Fogo: uma norma real (≠ "USO GERAL"/"N/A") → "Sim, <norma>"; senão "Não".
     if "uso_geral" in campos_visiveis:
         if valvula.uso_geral and valvula.uso_geral not in ("USO GERAL", "N/A"):

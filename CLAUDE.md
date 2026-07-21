@@ -1008,9 +1008,14 @@ qualquer configuração de disco dentro do escopo:
 
 ```
 norma = MSS SP-67 (Borboleta) →
-  diâmetro (1.3, "sizes 1½ NPS thru 72 NPS") 1½"-72" — o modelo não tem opção acima de
-    60", então só o piso (1½") precisa de trava; abaixo disso (1/2", 3/4", 1", 1 1/4")
-    fica fora do escopo
+  diâmetro (1.3, "sizes 1½ NPS thru 72 NPS") em lista fechada, decisão de negócio
+    (2026-07-21, não é leitura literal da 1.3, que cobre a faixa contínua): 1 1/2",
+    2", 2 1/2", 3", 4", 5", 6", 8", 10", 12", 14", 16", 18", 20", 24", 30", 36", 42",
+    48", 54", 60", 64", 66", 72" — 5"/64"/66"/72" não existem em DIAMETROS/
+    DIAMETROS_POR_TIPO (o modelo não tem opção acima de 60" nem em 5"); injetados
+    como <option> só quando a norma está ativa (função `_injetarDiametrosExtras`,
+    índex.html), removidos ao trocar de norma — não entram no DIAMETROS global,
+    então não ficam disponíveis pra Esfera/Gaveta/Globo nem Borboleta+outra norma
   classe 125/150/PMT — 3.1/3.2/3.3 (flanged/lug/wafer) só citam compatibilidade com
     flanges até Classe 150 (ASME B16.1 Cl 25/125, B16.5 Cl 150, B16.47 Cl 150 Série A,
     B16.24/B16.42 Cl 150, ou ANSI/AWWA C207) — nunca 300/600/900/1500/2500/800/PN. 4.3
@@ -1022,8 +1027,10 @@ norma = MSS SP-67 (Borboleta) →
 Fica no fim dos blocos de Borboleta em `_validar_regras_valvula`, DEPOIS das regras NBR
 Bi/Tri-Excêntrica (que restringem `norma` a {API 609, ASME B16.34} por corpo — precisam
 falar primeiro, senão a mensagem de classe da MSS SP-67 mascara a de norma esperada pelo
-teste). Espelho JS: `aplicarRegraMssSp67` (padrão `_bloquearOptsPorNorma`, registrada em
-`aplicarRegrasNorma` e na lista de bypass-de-edição). Coberta por `MssSp67EscopoTest`.
+teste). Espelho JS: `aplicarRegraMssSp67` (padrão `_bloquearOptsPorNorma` p/ classe +
+`_injetarDiametrosExtras`/`_bloquearOptsPorNorma` p/ diâmetro, registrada em
+`aplicarRegrasNorma` e na lista de bypass-de-edição). Coberta por `MssSp67EscopoTest`
+(atualizar o teste pra bater com a lista fechada, incluindo os 4 valores injetados).
 
 **Fora de alcance do modelo**: 1.2/10.2 (Type I tight shut-off x Type II seat leakage —
 sem campo de classe de estanqueidade), 3.4/3.5 (grooved/shouldered ends — sem opção em

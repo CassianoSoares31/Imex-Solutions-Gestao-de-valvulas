@@ -392,7 +392,7 @@
                 <select id="id_flange" name="flange" class="form-select"></select>
               </div>
               <div class="col-md-3 field-group" id="div-face_a_face">
-                <label class="form-label">Face a Face</label>
+                <label class="form-label">Tipo de Conexão</label>
                 <select id="id_face_a_face" name="face_a_face" class="form-select"></select>
               </div>
               <div class="col-md-3 field-group" id="div-tipo_ranhura">
@@ -449,6 +449,22 @@
               <div class="col-md-3 field-group" id="div-juncao_corpo_castelo">
                 <label class="form-label">Junção Corpo/Castelo</label>
                 <select id="id_juncao_corpo_castelo" name="juncao_corpo_castelo" class="form-select"></select>
+              </div>
+              <div class="col-md-3 field-group" id="div-tipo_retencao">
+                <label class="form-label">Tipo</label>
+                <select id="id_tipo_retencao" name="tipo_retencao" class="form-select"></select>
+              </div>
+              <div class="col-md-3 field-group" id="div-configuracao_corpo_retencao">
+                <label class="form-label">Configuração do Corpo</label>
+                <select id="id_configuracao_corpo_retencao" name="configuracao_corpo_retencao" class="form-select"></select>
+              </div>
+              <div class="col-md-3 field-group" id="div-orientacao_instalacao">
+                <label class="form-label">Orientação de Instalação</label>
+                <select id="id_orientacao_instalacao" name="orientacao_instalacao" class="form-select"></select>
+              </div>
+              <div class="col-md-3 field-group" id="div-categoria_594">
+                <label class="form-label">Categoria (API 594)</label>
+                <select id="id_categoria_594" name="categoria_594" class="form-select"></select>
               </div>
               <div class="col-md-3 field-group" id="div-dib">
                 <label class="form-label">Construção da Sede</label>
@@ -675,6 +691,12 @@
                 <label class="form-label">Hot Disconnect</label>
                 <div class="form-check form-switch mt-1">
                   <input type="checkbox" id="id_hot_disconnect" name="hot_disconnect" class="form-check-input" value="true">
+                </div>
+              </div>
+              <div class="col-md-3 field-group" id="div-contra_peso">
+                <label class="form-label">Contrapeso</label>
+                <div class="form-check form-switch mt-1">
+                  <input type="checkbox" id="id_contra_peso" name="contra_peso" class="form-check-input" value="true">
                 </div>
               </div>
             </div>
@@ -1729,10 +1751,11 @@ const ALL_FIELD_GROUPS = [
   'div-dib','div-valvula_alivio','div-dispositivo_antiestatico',
   'div-uso_geral','div-baixa_emissao_fugitiva','div-certificacao_sil',
   'div-nace','div-revestimento','div-tipo_castelo','div-juncao_corpo_castelo',
+  'div-tipo_retencao','div-configuracao_corpo_retencao','div-orientacao_instalacao','div-categoria_594',
   'div-categoria_borboleta','div-face_a_face','div-configuracao_disco',
   'div-posicionador','div-ip_posicionador','div-filtro','div-tubing','div-indicador_posicao',
   'div-chave_fim_curso','div-ip_chave_fim_curso','div-valvula_solenoide','div-ip_solenoide','div-valvula_lock_up','div-sensor_posicao','div-ip_sensor_posicao','div-valvula_escape_rapido',
-  'div-caracteristicas','div-dreno','div-vent','div-alivio_externo','div-hot_disconnect','div-placa_identificacao','div-flange',
+  'div-caracteristicas','div-dreno','div-vent','div-alivio_externo','div-hot_disconnect','div-contra_peso','div-placa_identificacao','div-flange',
   'div-posicao_falha','div-tensao','div-fase','div-frequencia',
 ];
 
@@ -1969,7 +1992,7 @@ async function carregarOpcoesPorTipo(tipo) {
     }
     // Checkboxes (sim/não) não são tocados por populateSelect -> zerar ao trocar de tipo
     ['valvula_alivio', 'dispositivo_antiestatico', 'baixa_emissao_fugitiva',
-     'indicador_posicao', 'dreno', 'vent', 'alivio_externo', 'hot_disconnect'].forEach(campo => {
+     'indicador_posicao', 'dreno', 'vent', 'alivio_externo', 'hot_disconnect', 'contra_peso'].forEach(campo => {
       const el = document.getElementById('id_' + campo);
       // disabled também: trava pode ter sobrado de regra do tipo anterior
       // (ex.: NBR → antiestático) sem a cascata de destrava ter rodado
@@ -2033,6 +2056,12 @@ async function carregarOpcoesPorTipo(tipo) {
     populateSelect(document.getElementById('id_categoria_borboleta'), data.categoria_borboleta, 'Selecione...');
     populateSelect(document.getElementById('id_face_a_face'), data.face_a_face, 'Selecione...');
     populateSelect(document.getElementById('id_configuracao_disco'), data.configuracao_disco, 'Selecione...');
+    populateSelect(document.getElementById('id_tipo_retencao'), data.tipo_retencao, 'Selecione...');
+    populateSelect(document.getElementById('id_configuracao_corpo_retencao'), data.configuracao_corpo_retencao, 'Selecione...');
+    populateSelect(document.getElementById('id_orientacao_instalacao'), data.orientacao_instalacao, 'Selecione...');
+    populateSelect(document.getElementById('id_categoria_594'), data.categoria_594, 'Selecione...');
+    aplicarRegraRetencaoTipoConstrutivo(document.getElementById('form-valvula'));
+    aplicarRegraApi594(document.getElementById('form-valvula'));
     populateSelect(document.getElementById('id_posicionador'), data.posicionador, 'Selecione...');
     populateSelect(document.getElementById('id_filtro'), data.filtro, 'Selecione...');
     populateSelect(document.getElementById('id_tubing'), data.tubing, 'Selecione...');
@@ -2068,8 +2097,9 @@ async function carregarOpcoesPorTipo(tipo) {
       }
     });
 
-    // Vedação (somente a vedação da junta)
-    if (data.vedacoes && data.vedacoes.length > 0) {
+    // Vedação Sede/Tampa — só Esfera. Pros demais tipos, a categoria da junta corpo/
+    // castelo já é perguntada em Materiais (JUNTA); esse campo aqui ficaria duplicado.
+    if (tipo === 'ESFERA' && data.vedacoes && data.vedacoes.length > 0) {
       populateSelect(document.getElementById('id_vedacao_junta'), data.vedacoes, 'Selecione...');
       document.getElementById('vedacao-container').style.display = '';
     } else {
@@ -2613,6 +2643,35 @@ function aplicarRegraRetencaoWafer(formElement = document) {
   _aplicarPermitidosSelect(diametroSelect, diametrosPermitidos);
   _aplicarPermitidosSelect(classeSelect, RET_FB_CLASSES);
   _aplicarPermitidosSelect(normaSelect, ['API 594']);
+}
+
+// Retenção: tipo construtivo (Pistão/Esfera/Disco) restringe configuração do corpo e
+// orientação de instalação. Espelha a validação de views.py:_validar_regras_valvula.
+const RETENCAO_CONFIG_POR_TIPO = {
+  PISTAO: new Set(['ANGULAR', 'RETO']),
+  ESFERA: new Set(['ANGULAR', 'RETO']),
+  DISCO: new Set(['RETO']),
+};
+const RETENCAO_ORIENTACAO_POR_TIPO = {
+  PISTAO: new Set(['HORIZONTAL']),
+  ESFERA: new Set(['HORIZONTAL', 'VERTICAL']),
+  DISCO: new Set(['HORIZONTAL', 'VERTICAL']),
+};
+function aplicarRegraRetencaoTipoConstrutivo(formElement = document) {
+  const tipoEl = formElement.querySelector('[name="tipo_valvula"]');
+  if (!tipoEl) return;
+  const ativa = tipoEl.value === 'RETENCAO';
+  const tipoRet = formElement.querySelector('[name="tipo_retencao"]')?.value || '';
+  const configEl = formElement.querySelector('[name="configuracao_corpo_retencao"]');
+  const orientEl = formElement.querySelector('[name="orientacao_instalacao"]');
+  const configPermitida = RETENCAO_CONFIG_POR_TIPO[tipoRet];
+  const orientPermitida = RETENCAO_ORIENTACAO_POR_TIPO[tipoRet];
+  // _bloquearOptsPorNorma auto-seleciona quando sobra só 1 opção habilitada — cobre o
+  // caso Pistão (só Horizontal) sem lógica extra de "forçar valor".
+  _bloquearOptsPorNorma(configEl, 'retencaoTipoConfig', ativa && !!configPermitida,
+    v => !configPermitida.has(v));
+  _bloquearOptsPorNorma(orientEl, 'retencaoTipoOrientacao', ativa && !!orientPermitida,
+    v => !orientPermitida.has(v));
 }
 
 const GAVETA_FB_NORMAS_A = ['ISO 10434', 'API 600', 'ASME B16.34'];
@@ -3469,6 +3528,8 @@ const NBR_EASTER_EGG_URL = 'https://www.youtube.com/watch?v=B6poWi-hc6w';
 document.getElementById('id_configuracao_disco').addEventListener('change', () => { const f = document.getElementById('form-valvula'); aplicarRegraGavetaAcionamento(); aplicarRegraBorboletaBiExc(f); aplicarRegraBorboletaCategoriaA(f); aplicarRegraBorboletaCategoriaB(f); aplicarRegraBorboletaConcA536(f); aplicarRegraBorboletaBiExcA216(f); aplicarRegraClassePmt(f); });
 document.getElementById('id_face_a_face').addEventListener('change', () => { const f = document.getElementById('form-valvula'); aplicarRegraBorboletaBiExc(f); aplicarRegraBorboletaCategoriaA(f); aplicarRegraBorboletaCategoriaB(f); aplicarRegraBorboletaConcA536(f); aplicarRegraBorboletaBiExcA216(f); aplicarRegraClassePmt(f); });
 document.getElementById('id_categoria_borboleta').addEventListener('change', () => { const f = document.getElementById('form-valvula'); aplicarRegraBorboletaBiExc(f); aplicarRegraBorboletaCategoriaA(f); aplicarRegraBorboletaCategoriaB(f); aplicarRegraBorboletaConcA536(f); aplicarRegraBorboletaBiExcA216(f); aplicarRegraClassePmt(f); });
+document.getElementById('id_tipo_retencao').addEventListener('change', () => aplicarRegraRetencaoTipoConstrutivo(document.getElementById('form-valvula')));
+document.getElementById('id_categoria_594').addEventListener('change', () => aplicarRegraApi594(document.getElementById('form-valvula')));
 document.getElementById('id_norma').addEventListener('change', () => {
   const f = document.getElementById('form-valvula');
   // Regras que restringem a norma por tipo/extremidade/diâmetro/classe.
@@ -4053,6 +4114,24 @@ function _bloquearOptsPorNorma(sel, marca, ativa, bloqueada) {
   }
 }
 
+// Reescreve o texto das options pra "DN (NPS)" — a norma usa DN como designação
+// primária (mapa é NPS -> DN), não muda o value enviado ao backend.
+function _relabelOptsPorDN(sel, marca, ativa, mapa) {
+  if (!sel) return;
+  sel.querySelectorAll('option').forEach(opt => {
+    if (!opt.value) return;
+    if (ativa && mapa[opt.value]) {
+      if (!opt.dataset[marca]) opt.dataset[marca + 'Orig'] = opt.textContent;
+      opt.textContent = `${mapa[opt.value]} (${opt.value})`;
+      opt.dataset[marca] = '1';
+    } else if (opt.dataset[marca]) {
+      opt.textContent = opt.dataset[marca + 'Orig'] || opt.value;
+      delete opt.dataset[marca];
+      delete opt.dataset[marca + 'Orig'];
+    }
+  });
+}
+
 // ── ISO 14313 7.2 → classe PN 20/50/100/150/250/420 ou Class 150/300/600/900/1500/2500 ──
 // Sem 800, 4500 nem PN 10/16/25/40. Diferente da API 6D: a ISO aceita a série PN.
 const CLASSES_ISO14313 = new Set([
@@ -4211,6 +4290,13 @@ function aplicarRegraMssSp72(formElement = document) {
 // dimensão obrigatória pra Flange/Butt-Welding — só Rosca é isenta). Diâmetro até 20"
 // (DN 500). Antiestático e dreno são "quando especificado" — opcionais, não travam.
 const CLASSES_NBR14788 = new Set(['PN 10', 'PN 16', 'PN 20', 'PN 25', 'PN 40', 'PN 50', 'PN 100']);
+// Seções 5/6: a norma designa o diâmetro por DN, não NPS — mapa de equivalência.
+const DN_NBR14788 = {
+  '1/2"': '15', '3/4"': '20', '1"': '25', '1 1/4"': '32', '1 1/2"': '40',
+  '2"': '50', '2 1/2"': '65', '3"': '80', '4"': '100', '6"': '150',
+  '8"': '200', '10"': '250', '12"': '300', '14"': '350', '16"': '400',
+  '18"': '450', '20"': '500',
+};
 function aplicarRegraNBR14788(formElement = document) {
   const normaEl = formElement.querySelector('[name="norma"]');
   const tipoEl = formElement.querySelector('[name="tipo_valvula"]');
@@ -4228,6 +4314,7 @@ function aplicarRegraNBR14788(formElement = document) {
   _bloquearOptsPorNorma(classeEl, 'nbr14788Classe', ativa,
     v => !CLASSES_NBR14788.has(v) || (v === 'PN 20' && _fb(ext)));
   _bloquearOptsPorNorma(diametroEl, 'nbr14788Dn', ativa, v => parseDiametro(v) > 20);
+  _relabelOptsPorDN(diametroEl, 'nbr14788Label', ativa, DN_NBR14788);
 }
 
 // ── ISO 15761 (Cláusula 1) → steel gate, globe and check valves DN 100 e menores ──
@@ -4462,10 +4549,16 @@ function aplicarRegraBS1868(formElement = document) {
 // ── API 594 (Seção 1) → Check Valves: Flanged, Lug, Wafer, and Butt-welding ──
 // Só Retenção oferece a norma. Extremidade só Flange/Lug/Wafer/Butt-Welding (sem
 // Socket-Welding/Rosca/Niple/Gray Loc Hub). Classe 150/300/600/900/1500/2500 (sem 800
-// nem PN; 125/250 de ferro fundido não existem no modelo). Diâmetro mínimo NPS 2 sempre;
-// teto por classe/extremidade — 150/300: NPS 48 (Wafer/Lug/Flange) ou 24 (Butt-Welding);
-// 600: NPS 42 ou 24; 900/1500: NPS 24 pra qualquer extremidade; 2500: NPS 12. Vedação não
-// pode ser Castelo Soldado nem Pressure Seal (5.1.14/6.3, mesmo caso da BS 1868).
+// nem PN; 125/250 de ferro fundido não existem no modelo). Diâmetro mínimo NPS 2 sempre.
+// `categoria_594` (Tipo A/Tipo B, 5.1.3) escolhe qual teto/extremidade vale:
+//   Tipo A (wafer/lug/duplo-flangeado, sem Butt-Welding) — teto por classe: 150/300→48,
+//     600→42, 900/1500→24, 2500→12
+//   Tipo B (bolted cover, flange ou butt-welding, sem Wafer/Lug) — teto por classe:
+//     150-1500→24, 2500→12 (mesmo teto pra Flange ou Butt-Welding)
+//   Sem categoria selecionada: mantém o teto por extremidade (Butt-Welding usa a coluna
+//     B; demais usam a mais permissiva) — mesmo comportamento de antes do campo existir
+// Categoria da junta (Materiais → JUNTA) não pode ser Castelo Soldado nem Pressure Seal
+// só no Tipo B (5.1.14 — bolted cover; Tipo A não tem esse requisito no escopo).
 const CLASSES_594 = new Set(['150', '300', '600', '900', '1500', '2500']);
 const TETO_594 = {
   '150': { BW: 24, OUTROS: 48 }, '300': { BW: 24, OUTROS: 48 },
@@ -4481,30 +4574,67 @@ function aplicarRegraApi594(formElement = document) {
   const extEl = formElement.querySelector('[name="tipo_extremidade"]');
   const classeEl = formElement.querySelector('[name="classe"]');
   const diametroEl = formElement.querySelector('[name="diametro"]');
-  const vedEl = formElement.querySelector('[name="vedacao_junta"]');
+  const catEl = formElement.querySelector('[name="categoria_594"]');
   const classe = classeEl?.value || '';
-  const _wlf = v => v === 'WAFER' || v === 'LUG' || v.startsWith('FLANGE');
+  const cat = catEl?.value || '';
+  const _wl = v => v === 'WAFER' || v === 'LUG';
+  const _flange = v => v.startsWith('FLANGE');
   const _bw = v => v.startsWith('BUTT-WELDING');
   const ext = (extEl?.value || '').toUpperCase();
-  _bloquearOptsPorNorma(extEl, 'api594Ext', ativa,
-    v => !_wlf(v.toUpperCase()) && !_bw(v.toUpperCase()));
+  _bloquearOptsPorNorma(extEl, 'api594Ext', ativa, v => {
+    const vu = v.toUpperCase();
+    if (!(_wl(vu) || _flange(vu) || _bw(vu))) return true;
+    if (cat === 'TIPO A' && _bw(vu)) return true;
+    if (cat === 'TIPO B' && _wl(vu)) return true;
+    return false;
+  });
   _bloquearOptsPorNorma(classeEl, 'api594Classe', ativa, v => !CLASSES_594.has(v));
   const _teto = TETO_594[classe];
   _bloquearOptsPorNorma(diametroEl, 'api594Dn', ativa,
     v => { const dn = parseDiametro(v); if (dn < 2) return true;
-           if (_teto) return dn > (_bw(ext) ? _teto.BW : _teto.OUTROS);
-           return false; });
-  _bloquearOptsPorNorma(vedEl, 'api594Ved', ativa,
-    v => v === 'CASTELO SOLDADO' || v === 'PRESSURE SEAL');
+           if (!_teto) return false;
+           if (cat === 'TIPO B') return dn > _teto.BW;
+           if (cat === 'TIPO A') return dn > _teto.OUTROS;
+           return dn > (_bw(ext) ? _teto.BW : _teto.OUTROS); });
+}
+
+// Injeta no select diâmetros que só existem dentro do escopo de uma norma (fora de
+// DIAMETROS/DIAMETROS_POR_TIPO do modelo) — some de novo quando a norma desativa.
+function _injetarDiametrosExtras(sel, marca, ativa, valores) {
+  if (!sel) return;
+  if (!ativa) {
+    sel.querySelectorAll(`option[data-diam-extra="${marca}"]`).forEach(opt => {
+      if (sel.value === opt.value) sel.value = '';
+      opt.remove();
+    });
+    return;
+  }
+  valores.forEach(v => {
+    if (Array.from(sel.options).some(o => o.value === v)) return;
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    opt.dataset.diamExtra = marca;
+    const alvo = parseDiametro(v);
+    const proximo = Array.from(sel.options).find(o => o.value && parseDiametro(o.value) > alvo);
+    if (proximo) sel.insertBefore(opt, proximo);
+    else sel.appendChild(opt);
+  });
 }
 
 // ── MSS SP-67 (Seção 1.3 + 3.1-3.3) → Butterfly Valves ──
-// Só Borboleta oferece a norma. Diâmetro 1 1/2"-72" (1.3, cobre flangeada/lug/wafer
-// juntas — o modelo já não tem opção acima de 60", então só o piso precisa de trava).
-// Classe 125/150/PMT: 3.1-3.3 só citam flange até Classe 150 (ASME B16.1 Cl 25/125,
-// B16.5 Cl 150, B16.24/B16.42 Cl 150, B16.47 Cl 150 Série A) e 4.3 tira do escopo
-// qualquer rating de flange fora dessa lista; PMT cabe pelo teste de prova alternativo
-// de 4.1.1.3/4.1.3.3/4.1.4.3 (mesmo CWP do API 609 Categoria A).
+// Só Borboleta oferece a norma. Diâmetro em lista fechada (1 1/2"-72", com buracos —
+// 5", 64", 66", 72" não existem em DIAMETROS/DIAMETROS_POR_TIPO, injetados só nesta
+// norma). Classe 125/150/PMT: 3.1-3.3 só citam flange até Classe 150 (ASME B16.1 Cl
+// 25/125, B16.5 Cl 150, B16.24/B16.42 Cl 150, B16.47 Cl 150 Série A) e 4.3 tira do
+// escopo qualquer rating de flange fora dessa lista; PMT cabe pelo teste de prova
+// alternativo de 4.1.1.3/4.1.3.3/4.1.4.3 (mesmo CWP do API 609 Categoria A).
+const DIAMETROS_MSS_SP67 = [
+  '1 1/2"', '2"', '2 1/2"', '3"', '4"', '5"', '6"', '8"', '10"', '12"',
+  '14"', '16"', '18"', '20"', '24"', '30"', '36"', '42"', '48"', '54"',
+  '60"', '64"', '66"', '72"',
+];
+const DIAMETROS_MSS_SP67_SET = new Set(DIAMETROS_MSS_SP67);
 function aplicarRegraMssSp67(formElement = document) {
   const normaEl = formElement.querySelector('[name="norma"]');
   const tipoEl = formElement.querySelector('[name="tipo_valvula"]');
@@ -4514,7 +4644,8 @@ function aplicarRegraMssSp67(formElement = document) {
   const diametroEl = formElement.querySelector('[name="diametro"]');
   _bloquearOptsPorNorma(classeEl, 'mssSp67Classe', ativa,
     v => v !== '125' && v !== '150' && v !== 'PMT');
-  _bloquearOptsPorNorma(diametroEl, 'mssSp67Dn', ativa, v => parseDiametro(v) < 1.5);
+  _injetarDiametrosExtras(diametroEl, 'mssSp67', ativa, DIAMETROS_MSS_SP67);
+  _bloquearOptsPorNorma(diametroEl, 'mssSp67Dn', ativa, v => !DIAMETROS_MSS_SP67_SET.has(v));
 }
 
 // Atalho: regras genéricas de norma (ISO 14313 + ISO 17292 + BS ISO 7121 + API 608 +
@@ -4955,8 +5086,12 @@ const CAMPO_INFO = {
   revestimento: { label: "Revestimento Parafuso e Porca", tipo: "select" },
   tipo_castelo: { label: "Castelo", tipo: "select" },
   juncao_corpo_castelo: { label: "Junção Corpo/Castelo", tipo: "select" },
+  tipo_retencao: { label: "Tipo", tipo: "select" },
+  configuracao_corpo_retencao: { label: "Configuração do Corpo", tipo: "select" },
+  orientacao_instalacao: { label: "Orientação de Instalação", tipo: "select" },
+  categoria_594: { label: "Categoria (API 594)", tipo: "select" },
   categoria_borboleta: { label: "Categoria", tipo: "select" },
-  face_a_face: { label: "Face a Face", tipo: "select" },
+  face_a_face: { label: "Tipo de Conexão", tipo: "select" },
   configuracao_disco: { label: "Config. Disco", tipo: "select" },
   posicionador: { label: "Sinal de Alimentação", tipo: "select" },
   ip_posicionador: { label: "Grau de Proteção Posicionador", tipo: "text" },
@@ -4976,6 +5111,7 @@ const CAMPO_INFO = {
   vent: { label: "Vent", tipo: "bool" },
   alivio_externo: { label: "Alívio Externo", tipo: "bool" },
   hot_disconnect: { label: "Hot Disconnect", tipo: "bool" },
+  contra_peso: { label: "Contrapeso", tipo: "bool" },
   placa_identificacao: { label: "Placa de Identificação", tipo: "select" },
   flange: { label: "Flange", tipo: "select" },
   posicao_falha: { label: "Posição em Caso de Falha", tipo: "select" },
@@ -4988,7 +5124,7 @@ const CAMPOS_POR_TIPO = {
   ESFERA: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_montagem","tipo_passagem","tipo_acionamento","marca_atuador","flange_acoplamento","construcao_corpo","dib","valvula_alivio","dispositivo_antiestatico","uso_geral","baixa_emissao_fugitiva","certificacao_sil","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","dreno","vent","alivio_externo","hot_disconnect","indicador_posicao","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
   GAVETA: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_passagem","tipo_acionamento","marca_atuador","flange_acoplamento","tipo_castelo","juncao_corpo_castelo","uso_geral","baixa_emissao_fugitiva","certificacao_sil","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","dreno","vent","alivio_externo","hot_disconnect","indicador_posicao","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
   GLOBO: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_passagem","tipo_acionamento","marca_atuador","flange_acoplamento","tipo_castelo","juncao_corpo_castelo","uso_geral","baixa_emissao_fugitiva","certificacao_sil","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","dreno","vent","alivio_externo","hot_disconnect","indicador_posicao","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
-  RETENCAO: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_passagem","juncao_corpo_castelo","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","hot_disconnect","indicador_posicao","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
+  RETENCAO: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_passagem","juncao_corpo_castelo","tipo_retencao","configuracao_corpo_retencao","orientacao_instalacao","categoria_594","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","hot_disconnect","indicador_posicao","contra_peso","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
   BORBOLETA: ["fabricante","norma","iogp","nbr","diametro","classe","classe_pmt","tipo_ranhura","tipo_acionamento","marca_atuador","flange_acoplamento","dispositivo_antiestatico","categoria_borboleta","face_a_face","configuracao_disco","uso_geral","certificacao_sil","nace","revestimento","posicionador","ip_posicionador","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","hot_disconnect","indicador_posicao","placa_identificacao","flange","posicao_falha","tensao","fase","frequencia"],
   GLOBO_CONTROLE: ["fabricante","norma","iogp","nbr","diametro","classe","tipo_extremidade","flange","tipo_ranhura","tipo_passagem","tipo_acionamento","marca_atuador","flange_acoplamento","juncao_corpo_castelo","uso_geral","baixa_emissao_fugitiva","certificacao_sil","nace","revestimento","posicionador","ip_posicionador","filtro","indicador_posicao","tubing","chave_fim_curso","ip_chave_fim_curso","valvula_solenoide","ip_solenoide","valvula_lock_up","sensor_posicao","ip_sensor_posicao","valvula_escape_rapido","caracteristicas","dreno","hot_disconnect","placa_identificacao","posicao_falha","tensao","fase","frequencia"],
 };
@@ -5029,6 +5165,10 @@ const CAMPO_PARA_API_KEY = {
   revestimento: "revestimento",
   tipo_castelo: "castelos",
   juncao_corpo_castelo: "juncoes",
+  tipo_retencao: "tipo_retencao",
+  configuracao_corpo_retencao: "configuracao_corpo_retencao",
+  orientacao_instalacao: "orientacao_instalacao",
+  categoria_594: "categoria_594",
   categoria_borboleta: "categoria_borboleta",
   face_a_face: "face_a_face",
   configuracao_disco: "configuracao_disco",
@@ -5046,6 +5186,7 @@ const CAMPO_PARA_API_KEY = {
   vent: null,
   alivio_externo: null,
   hot_disconnect: null, // bool
+  contra_peso: null, // bool
   placa_identificacao: "placa_identificacao",
   flange: "flange",
 };
@@ -5251,8 +5392,12 @@ function renderDetalheHTML(v) {
       ${v.construcao_corpo ? `<div class="detail-row"><span class="detail-label">Construção Corpo</span><span class="detail-value">${v.construcao_corpo}</span></div>` : ''}
       ${v.tipo_castelo ? `<div class="detail-row"><span class="detail-label">Castelo</span><span class="detail-value">${v.tipo_castelo}</span></div>` : ''}
       ${v.juncao_corpo_castelo ? `<div class="detail-row"><span class="detail-label">Junção Corpo/Castelo</span><span class="detail-value">${v.juncao_corpo_castelo}</span></div>` : ''}
+      ${v.tipo_retencao ? `<div class="detail-row"><span class="detail-label">Tipo</span><span class="detail-value">${v.tipo_retencao}</span></div>` : ''}
+      ${v.configuracao_corpo_retencao ? `<div class="detail-row"><span class="detail-label">Configuração do Corpo</span><span class="detail-value">${v.configuracao_corpo_retencao}</span></div>` : ''}
+      ${v.orientacao_instalacao ? `<div class="detail-row"><span class="detail-label">Orientação de Instalação</span><span class="detail-value">${v.orientacao_instalacao}</span></div>` : ''}
+      ${v.categoria_594 ? `<div class="detail-row"><span class="detail-label">Categoria (API 594)</span><span class="detail-value">${v.categoria_594}</span></div>` : ''}
       ${v.categoria_borboleta ? `<div class="detail-row"><span class="detail-label">Categoria</span><span class="detail-value">${v.categoria_borboleta}</span></div>` : ''}
-      ${v.face_a_face ? `<div class="detail-row"><span class="detail-label">Face a Face</span><span class="detail-value">${v.face_a_face}</span></div>` : ''}
+      ${v.face_a_face ? `<div class="detail-row"><span class="detail-label">Tipo de Conexão</span><span class="detail-value">${v.face_a_face}</span></div>` : ''}
       ${v.configuracao_disco ? `<div class="detail-row"><span class="detail-label">Config. Disco</span><span class="detail-value">${v.configuracao_disco}</span></div>` : ''}
       ${v.flange ? `<div class="detail-row"><span class="detail-label">Flange</span><span class="detail-value">${escapeHtml(v.flange)}</span></div>` : ''}
     </div>
@@ -5282,6 +5427,7 @@ function renderDetalheHTML(v) {
       <div class="detail-row"><span class="detail-label">Vent</span><span class="detail-value">${v.vent ? 'Sim' : 'Não'}</span></div>
       <div class="detail-row"><span class="detail-label">Alívio Externo</span><span class="detail-value">${v.alivio_externo ? 'Sim' : 'Não'}</span></div>
       <div class="detail-row"><span class="detail-label">Hot Disconnect</span><span class="detail-value">${v.hot_disconnect ? 'Sim' : 'Não'}</span></div>
+      ${v.tipo_valvula === 'RETENCAO' ? `<div class="detail-row"><span class="detail-label">Contrapeso</span><span class="detail-value">${v.contra_peso ? 'Sim' : 'Não'}</span></div>` : ''}
       ${v.uso_geral ? `<div class="detail-row"><span class="detail-label">Uso Geral / Testada a Fogo</span><span class="detail-value">${v.uso_geral}</span></div>` : ''}
       ${v.certificacao_sil ? `<div class="detail-row"><span class="detail-label">Certificação SIL</span><span class="detail-value">${v.certificacao_sil}</span></div>` : ''}
       ${v.nace ? `<div class="detail-row"><span class="detail-label">NACE</span><span class="detail-value">${v.nace}</span></div>` : ''}
@@ -5497,6 +5643,7 @@ async function duplicarValvula(id) {
       'tipo_passagem','tipo_acionamento','marca_atuador','flange_acoplamento','tipo_montagem','construcao_corpo',
       'pintura_atuador',
       'tipo_castelo','juncao_corpo_castelo','dib','uso_geral','certificacao_sil',
+      'tipo_retencao','configuracao_corpo_retencao','orientacao_instalacao','categoria_594',
       'nace','revestimento','categoria_borboleta','face_a_face','configuracao_disco',
       'posicionador','ip_posicionador','filtro','tubing',
       'ip_chave_fim_curso','ip_solenoide','valvula_lock_up','ip_sensor_posicao','valvula_escape_rapido',
@@ -5507,6 +5654,8 @@ async function duplicarValvula(id) {
       const el = document.getElementById('id_' + f);
       if (el && v[f]) el.value = v[f];
     });
+    aplicarRegraRetencaoTipoConstrutivo(document.getElementById('form-valvula'));
+    aplicarRegraApi594(document.getElementById('form-valvula'));
     // Solenoide/Chave FC/Sensor viraram Sim/Não: marca o checkbox se a origem tinha
     // o dispositivo (principal="SIM" ou algum dado interno) — mostra os campos copiados.
     SUBCAT_OPCIONAL_TOGGLE.forEach(cfg => {
@@ -5522,7 +5671,7 @@ async function duplicarValvula(id) {
     if (v.condicao_pintura_atuador) document.getElementById('id_condicao_pintura_atuador').value = v.condicao_pintura_atuador;
 
     // Checkboxes
-    ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect'].forEach(c => {
+    ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect','contra_peso'].forEach(c => {
       const el = document.getElementById('id_' + c);
       if (el) el.checked = !!v[c];
     });
@@ -5533,8 +5682,8 @@ async function duplicarValvula(id) {
       if (sel) sel.value = m.material;
     });
 
-    // Vedação (somente a vedação da junta)
-    if (v.vedacoes && v.vedacoes.length) {
+    // Vedação Sede/Tampa — só Esfera (carregarOpcoesPorTipo já escondeu/limpou o select p/ os demais)
+    if (v.tipo_valvula === 'ESFERA' && v.vedacoes && v.vedacoes.length) {
       const vedJ = document.getElementById('id_vedacao_junta');
       if (vedJ) vedJ.value = v.vedacoes[0].vedacao_junta || v.vedacoes[0].vedacao_corpo_tampa || '';
     }
@@ -5654,6 +5803,10 @@ async function editarValvula(id) {
       revestimento: opData.revestimento,
       tipo_castelo: opData.castelos,
       juncao_corpo_castelo: opData.juncoes,
+      tipo_retencao: opData.tipo_retencao,
+      configuracao_corpo_retencao: opData.configuracao_corpo_retencao,
+      orientacao_instalacao: opData.orientacao_instalacao,
+      categoria_594: opData.categoria_594,
       categoria_borboleta: opData.categoria_borboleta,
       face_a_face: opData.face_a_face,
       configuracao_disco: opData.configuracao_disco,
@@ -5716,6 +5869,10 @@ async function editarValvula(id) {
       { name: 'pintura_atuador', label: 'Pintura do Atuador' },
       { name: 'tipo_castelo', label: 'Castelo' },
       { name: 'juncao_corpo_castelo', label: 'Junção Corpo/Castelo' },
+      { name: 'tipo_retencao', label: 'Tipo' },
+      { name: 'configuracao_corpo_retencao', label: 'Configuração do Corpo' },
+      { name: 'orientacao_instalacao', label: 'Orientação de Instalação' },
+      { name: 'categoria_594', label: 'Categoria (API 594)' },
       { name: 'dib', label: 'Construção da Sede' },
       { name: 'uso_geral', label: 'Uso Geral' },
       { name: 'certificacao_sil', label: 'Certificação SIL' },
@@ -5723,7 +5880,7 @@ async function editarValvula(id) {
       { name: 'revestimento', label: 'Revestimento Parafuso e Porca' },
       { name: 'categoria_borboleta', label: 'Categoria' },
       { name: 'classe_pmt', label: 'PMT' },
-      { name: 'face_a_face', label: 'Face a Face' },
+      { name: 'face_a_face', label: 'Tipo de Conexão' },
       { name: 'configuracao_disco', label: 'Config. Disco' },
       { name: 'filtro', label: 'Filtro' },
       { name: 'tubing', label: 'Tubing' },
@@ -5796,6 +5953,7 @@ async function editarValvula(id) {
       { name: 'vent', label: 'Vent', value: v.vent },
       { name: 'alivio_externo', label: 'Alívio Externo', value: v.alivio_externo },
       { name: 'hot_disconnect', label: 'Hot Disconnect', value: v.hot_disconnect },
+      { name: 'contra_peso', label: 'Contrapeso', value: v.contra_peso },
     ];
 
     let checkboxHtml = '';
@@ -5934,11 +6092,14 @@ async function editarValvula(id) {
       if (v.nbr) _editAnexoEl.value = ANEXO_POR_TIPO[v.tipo_valvula];
     }
 
-    if (opData.vedacoes && opData.vedacoes.length > 0) {
+    // Vedação Sede/Tampa — só Esfera (demais tipos usam a categoria da junta em Materiais).
+    if (v.tipo_valvula === 'ESFERA' && opData.vedacoes && opData.vedacoes.length > 0) {
       populateSelect(document.getElementById('edit_vedacao_junta'), opData.vedacoes, 'Selecione...');
       // Compatível com dados antigos: usa vedacao_junta ou cai para vedacao_corpo_tampa
       document.getElementById('edit_vedacao_junta').value = (v.vedacoes[0] && (v.vedacoes[0].vedacao_junta || v.vedacoes[0].vedacao_corpo_tampa)) || '';
       document.getElementById('editar_vedacao_container').style.display = '';
+    } else {
+      document.getElementById('editar_vedacao_container').style.display = 'none';
     }
 
     await carregarMateriaisDinamicos(v.tipo_valvula, opData.tipos_material || [], buildSelectedMaterialsMap(v.materiais), 'editar_materiais_dynamic', 'editar_materiais_container');
@@ -5995,6 +6156,12 @@ async function editarValvula(id) {
     aplicarRegraClassePmt(_fe);
     aplicarRegraVedacaoNBR(_fe);
     aplicarRegraJuntaNBR(_fe);
+    aplicarRegraRetencaoTipoConstrutivo(_fe);
+    const _editTipoRetEl = document.getElementById('edit_tipo_retencao');
+    if (_editTipoRetEl) _editTipoRetEl.addEventListener('change', () => aplicarRegraRetencaoTipoConstrutivo(document.getElementById('form-editar-valvula')));
+    aplicarRegraApi594(_fe);
+    const _editCat594El = document.getElementById('edit_categoria_594');
+    if (_editCat594El) _editCat594El.addEventListener('change', () => aplicarRegraApi594(document.getElementById('form-editar-valvula')));
     ['edit_diametro', 'edit_classe'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('change', () => {
@@ -6105,7 +6272,7 @@ document.getElementById('btn-salvar-edicao').addEventListener('click', async fun
   formData.forEach((value, key) => {
     if (key === 'nbr' || key === 'valvula_alivio' || key === 'dispositivo_antiestatico' ||
     key === 'baixa_emissao_fugitiva' || key === 'indicador_posicao' ||
-    key === 'hot_disconnect') {
+    key === 'hot_disconnect' || key === 'contra_peso') {
       data[key] = true;
     } else {
       data[key] = value;
@@ -6114,7 +6281,7 @@ document.getElementById('btn-salvar-edicao').addEventListener('click', async fun
 
   // Ler checkboxes direto do DOM (.checked funciona mesmo com disabled,
   // ao contrário do FormData que ignora campos desabilitados)
-  ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect'].forEach(k => {
+  ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect','contra_peso'].forEach(k => {
     const el = form.querySelector(`[name="${k}"]`);
     data[k] = el ? el.checked : false;
   });
@@ -6149,8 +6316,9 @@ document.getElementById('btn-salvar-edicao').addEventListener('click', async fun
     }
   });
 
+  const vedacaoEditContainer = form.querySelector('#editar_vedacao_container');
   const vedacaoJuntaSelect = form.querySelector('#edit_vedacao_junta');
-  const _vjEditVal = vedacaoJuntaSelect ? vedacaoJuntaSelect.value : '';
+  const _vjEditVal = (vedacaoEditContainer && vedacaoEditContainer.style.display !== 'none' && vedacaoJuntaSelect) ? vedacaoJuntaSelect.value : '';
   if (_vjEditVal) {
     data.vedacoes.push({ vedacao_corpo_tampa: '', vedacao_junta: _vjEditVal });
   }
@@ -6230,6 +6398,7 @@ function coletarDadosCadastro(tipoValvula) {
     'tipo_passagem', 'tipo_acionamento', 'marca_atuador', 'flange_acoplamento', 'tipo_montagem', 'construcao_corpo',
     'pintura_atuador', 'cor_atuador', 'condicao_pintura_atuador',
     'tipo_castelo', 'juncao_corpo_castelo', 'dib', 'uso_geral',
+    'tipo_retencao', 'configuracao_corpo_retencao', 'orientacao_instalacao', 'categoria_594',
     'certificacao_sil', 'nace', 'revestimento', 'categoria_borboleta', 'face_a_face',
     'configuracao_disco', 'posicionador', 'ip_posicionador', 'filtro', 'tubing',
     'ip_chave_fim_curso', 'ip_solenoide', 'valvula_lock_up', 'ip_sensor_posicao', 'valvula_escape_rapido',
@@ -6257,7 +6426,7 @@ function coletarDadosCadastro(tipoValvula) {
   const checkboxes = [
     'nbr', 'valvula_alivio', 'dispositivo_antiestatico',
     'baixa_emissao_fugitiva', 'indicador_posicao',
-    'dreno', 'vent', 'alivio_externo', 'hot_disconnect'
+    'dreno', 'vent', 'alivio_externo', 'hot_disconnect', 'contra_peso'
   ];
   checkboxes.forEach(checkbox => {
     const element = document.getElementById(`id_${checkbox}`);
@@ -6272,8 +6441,9 @@ function coletarDadosCadastro(tipoValvula) {
     }
   });
 
+  const vedacaoContainerSubmit = document.getElementById('vedacao-container');
   const vedacaoJuntaSelect = document.getElementById('id_vedacao_junta');
-  const _vjVal = vedacaoJuntaSelect ? vedacaoJuntaSelect.value : '';
+  const _vjVal = (vedacaoContainerSubmit && vedacaoContainerSubmit.style.display !== 'none' && vedacaoJuntaSelect) ? vedacaoJuntaSelect.value : '';
   if (_vjVal) {
     data.vedacoes.push({ vedacao_corpo_tampa: '', vedacao_junta: _vjVal });
   }
@@ -6500,13 +6670,14 @@ const RASCUNHO_TEXT_FIELDS = [
   'norma','diametro','classe','tipo_extremidade','tipo_ranhura',
   'tipo_passagem','tipo_acionamento','marca_atuador','flange_acoplamento','tipo_montagem','construcao_corpo',
   'tipo_castelo','juncao_corpo_castelo','dib','uso_geral','certificacao_sil',
+  'tipo_retencao','configuracao_corpo_retencao','orientacao_instalacao','categoria_594',
   'nace','revestimento','categoria_borboleta','face_a_face','configuracao_disco',
   'posicionador','ip_posicionador','filtro','tubing',
   'ip_chave_fim_curso','ip_solenoide','valvula_lock_up','ip_sensor_posicao','valvula_escape_rapido',
   'caracteristicas','placa_identificacao','flange',
   'posicao_falha','tensao','fase','frequencia'
 ];
-const RASCUNHO_CHECKBOXES = ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect'];
+const RASCUNHO_CHECKBOXES = ['nbr','valvula_alivio','dispositivo_antiestatico','baixa_emissao_fugitiva','indicador_posicao','dreno','vent','alivio_externo','hot_disconnect','contra_peso'];
 let rascunhoTimer = null;
 
 function coletarRascunho() {
@@ -6698,6 +6869,7 @@ function limparForm() {
   ['id_fabricante','id_pintura','id_pintura_atuador','id_norma','id_diametro','id_classe','id_tipo_extremidade','id_tipo_ranhura',
   'id_tipo_acionamento','id_marca_atuador','id_flange_acoplamento','id_tipo_passagem','id_tipo_castelo','id_juncao_corpo_castelo',
   'id_uso_geral','id_tipo_montagem','id_construcao_corpo','id_dib','id_certificacao_sil',
+  'id_tipo_retencao','id_configuracao_corpo_retencao','id_orientacao_instalacao','id_categoria_594',
   'id_nace','id_revestimento','id_categoria_borboleta','id_face_a_face','id_configuracao_disco',
   'id_posicionador','id_filtro','id_tubing',
   'id_chave_fim_curso','id_valvula_solenoide','id_valvula_lock_up','id_sensor_posicao','id_valvula_escape_rapido',

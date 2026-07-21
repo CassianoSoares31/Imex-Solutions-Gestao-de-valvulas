@@ -829,6 +829,35 @@ class Valvula(models.Model):
         ("APARAFUSADO", "Aparafusado"),
     ]
 
+    # Retenção: tipo construtivo do obturador + configuração do corpo + orientação de
+    # instalação. Dependência entre os 3 (validada em views.py):
+    #   PISTAO  -> configuração Angular/Reto; orientação só Horizontal
+    #   ESFERA  -> configuração Angular/Reto; orientação Horizontal/Vertical
+    #   DISCO   -> configuração só Reto; orientação Horizontal/Vertical
+    TIPO_RETENCAO = [
+        ("PISTAO", "Pistão"),
+        ("ESFERA", "Esfera"),
+        ("DISCO", "Disco"),
+    ]
+
+    CONFIGURACAO_CORPO_RETENCAO = [
+        ("ANGULAR", "Angular"),
+        ("RETO", "Reto"),
+    ]
+
+    ORIENTACAO_INSTALACAO_RETENCAO = [
+        ("HORIZONTAL", "Horizontal"),
+        ("VERTICAL", "Vertical"),
+    ]
+
+    # API 594 (Seção 1): dois tipos construtivos — Tipo A (curto: wafer/lug/duplo-flange,
+    # placa única ou dupla) e Tipo B (longo: bolted cover, flange ou solda de topo). Só
+    # Retenção oferece a norma; só faz sentido quando norma = API 594.
+    CATEGORIA_594 = [
+        ("TIPO A", "Tipo A"),
+        ("TIPO B", "Tipo B"),
+    ]
+
     CATEGORIA_BORBOLETA = [
         ("CATEGORIA A", "Categoria A"),
         ("CATEGORIA B", "Categoria B"),
@@ -1174,11 +1203,12 @@ class Valvula(models.Model):
             "fabricante", "pintura", "cor", "condicao_pintura",
             "norma", "iogp", "qsl", "nbr", "diametro", "classe", "tipo_extremidade", "tipo_ranhura",
             "tipo_passagem", "juncao_corpo_castelo", "nace", "revestimento",
+            "tipo_retencao", "configuracao_corpo_retencao", "orientacao_instalacao", "categoria_594",
             "posicionador", "ip_posicionador", "ex_posicionador", "protecao_posicionador", "grupo_posicionador", "temp_posicionador", "epl_posicionador", "tensao_posicionador", "corrente_posicionador", "potencia_posicionador",
             "chave_fim_curso", "ip_chave_fim_curso", "ex_chave_fim_curso", "protecao_chave_fim_curso", "grupo_chave_fim_curso", "temp_chave_fim_curso", "epl_chave_fim_curso", "tensao_chave_fim_curso", "corrente_chave_fim_curso", "potencia_chave_fim_curso",
             "valvula_solenoide", "ip_solenoide", "ex_solenoide", "protecao_solenoide", "grupo_solenoide", "temp_solenoide", "epl_solenoide", "tensao_solenoide", "corrente_solenoide", "potencia_solenoide",
             "valvula_lock_up", "sensor_posicao", "ip_sensor_posicao", "ex_sensor_posicao", "protecao_sensor_posicao", "grupo_sensor_posicao", "temp_sensor_posicao", "epl_sensor_posicao", "tensao_sensor_posicao", "corrente_sensor_posicao", "potencia_sensor_posicao", "valvula_escape_rapido",
-            "caracteristicas", "hot_disconnect", "indicador_posicao",
+            "caracteristicas", "hot_disconnect", "indicador_posicao", "contra_peso",
             "placa_identificacao", "flange", "anexo_nbr",
             "posicao_falha", "tensao", "fase", "frequencia",
         ],
@@ -1514,8 +1544,12 @@ class Valvula(models.Model):
     revestimento = models.CharField(max_length=20, choices=REVESTIMENTO, blank=True, null=True, verbose_name="Revestimento")
     tipo_castelo = models.CharField(max_length=20, choices=TIPO_CASTELO, blank=True, null=True, verbose_name="Tipo de Castelo")
     juncao_corpo_castelo = models.CharField(max_length=30, choices=JUNCAO_CORPO_CASTELO, blank=True, null=True, verbose_name="Junção Corpo / Castelo")
+    tipo_retencao = models.CharField(max_length=10, choices=TIPO_RETENCAO, blank=True, null=True, verbose_name="Tipo")
+    configuracao_corpo_retencao = models.CharField(max_length=10, choices=CONFIGURACAO_CORPO_RETENCAO, blank=True, null=True, verbose_name="Configuração do Corpo")
+    orientacao_instalacao = models.CharField(max_length=10, choices=ORIENTACAO_INSTALACAO_RETENCAO, blank=True, null=True, verbose_name="Orientação de Instalação")
+    categoria_594 = models.CharField(max_length=10, choices=CATEGORIA_594, blank=True, null=True, verbose_name="Categoria (API 594)")
     categoria_borboleta = models.CharField(max_length=20, choices=CATEGORIA_BORBOLETA, blank=True, null=True, verbose_name="Categoria")
-    face_a_face = models.CharField(max_length=50, choices=FACE_A_FACE, blank=True, null=True, verbose_name="Face a Face")
+    face_a_face = models.CharField(max_length=50, choices=FACE_A_FACE, blank=True, null=True, verbose_name="Tipo de Conexão")
     configuracao_disco = models.CharField(max_length=20, choices=CONFIGURACAO_DISCO, blank=True, null=True, verbose_name="Configuração do Disco")
 
     # Campos exclusivos Globo Controle
@@ -1573,6 +1607,7 @@ class Valvula(models.Model):
     vent = models.BooleanField(default=False, verbose_name="Vent")
     alivio_externo = models.BooleanField(default=False, verbose_name="Alívio Externo")
     hot_disconnect = models.BooleanField(default=False, verbose_name="Hot Disconnect")
+    contra_peso = models.BooleanField(default=False, verbose_name="Contrapeso")
     placa_identificacao = models.CharField(max_length=20, blank=True, null=True, verbose_name="Placa de Identificação")
     flange = models.CharField(max_length=30, blank=True, null=True, verbose_name="Flange")
     anexo_nbr = models.CharField(max_length=20, blank=True, null=True, verbose_name="Anexo NBR")

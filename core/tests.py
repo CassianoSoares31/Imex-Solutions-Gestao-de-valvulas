@@ -1009,6 +1009,48 @@ class RateIso14313Test(TestCase):
         self.assertEqual(self._rate(v), "")
 
 
+class RateBs1868Test(TestCase):
+    """BS 1868 (decisão de negócio 2026-07-21): rate limitado a A/C, sem G — só
+    Retenção oferece a norma, então só esse tipo é exercitado na prática."""
+
+    def _rate(self, valvula):
+        from core.views import _calc_rate_api6d
+        materiais = list(valvula.materiais.select_related("material"))
+        componentes = list(valvula.componentes.all())
+        return _calc_rate_api6d(valvula, materiais, componentes)
+
+    def test_retencao_com_inserto_macio_rate_a(self):
+        v = make_valvula(tipo="RETENCAO", norma="BS 1868")
+        ComponentesInternos.objects.create(valvula=v, inserto_rede="PEEK")
+        self.assertEqual(self._rate(v), "A")
+
+    def test_retencao_sem_inserto_rate_c_nao_g(self):
+        v = make_valvula(tipo="RETENCAO", norma="BS 1868")
+        self.assertEqual(self._rate(v), "C")
+
+
+class Bs1868RateNaFolhaTest(TestCase):
+    """Rate A/C do BS 1868 tem que aparecer na FD (PDF/Excel/preview), não só no
+    cálculo isolado — checa a linha "Critério de Aceitação" em _build_folha_grupos,
+    mesma fonte usada por valvula_pdf/valvula_preview/valvula_export_lote."""
+
+    def _criterio(self, componentes):
+        from core.views import _build_folha_grupos, _folha_labels_bi, _calc_rate_api6d
+        v = make_valvula(tipo="RETENCAO", norma="BS 1868")
+        L = _folha_labels_bi()
+        rate = _calc_rate_api6d(v, [], componentes)
+        grupos = _build_folha_grupos(v, [], [], componentes, rate, L)
+        corpo = dict(grupos[0][1])  # grupo "Corpo e Internos"
+        return corpo[L["lbl_acceptance_criteria"]]
+
+    def test_rate_a_aparece_com_inserto_macio(self):
+        comp = [ComponentesInternos(inserto_rede="PEEK")]
+        self.assertEqual(self._criterio(comp), "ISO 5208 — Rate A")
+
+    def test_rate_c_aparece_sem_inserto(self):
+        self.assertEqual(self._criterio([]), "ISO 5208 — Rate C")
+
+
 class ValvulaExcluirTest(EspecialMixin, TestCase):
     def test_excluir(self):
         v = make_valvula()
@@ -1677,11 +1719,11 @@ class NbrJuntaRuleTest(EspecialMixin, TestCase):
 
 class VedacaoNbrClasseRuleTest(EspecialMixin, TestCase):
     """Gaveta + NBR 15827 + classe 2500 só aceita RTJ (FJA)/Pressure Seal/Castelo
-    Soldado (_VED_NBR_POR_CLASSE, views.py:37). O frontend manda o valor em
-    vedacao_junta (index.html:5681/5804/6063), não em vedacao_corpo_tampa — a trava
-    precisa ler o campo real, senão nunca dispara em produção."""
+    Soldado (_VED_NBR_POR_CLASSE, views.py:37). A trava lê a Categoria da Junta em
+    Materiais (tipo_material=JUNTA) — a Vedação Sede/Tampa (Vedacao model) virou
+    exclusiva de Esfera; Gaveta/Globo/Retenção/GC usam só a categoria da junta."""
 
-    def _payload(self, vedacao_key, vedacao_val):
+    def _payload(self, junta_categoria):
         return {
             "tipo_valvula": "GAVETA", "funcao": "BLOQUEIO", "nbr": True, "norma": "API 600",
             "diametro": '2"', "classe": "2500", "tipo_extremidade": "FLANGE RTJ",
@@ -1690,12 +1732,11 @@ class VedacaoNbrClasseRuleTest(EspecialMixin, TestCase):
             "juncao_corpo_castelo": "APARAFUSADO", "uso_geral": "USO GERAL",
             "certificacao_sil": "SIL 1", "nace": "N/A", "revestimento": "N/A",
             "materiais": [
-                {"tipo_material": "JUNTA", "material": "AISI 304 + GRAFITE FLEXÍVEL"},
+                {"tipo_material": "JUNTA", "material": junta_categoria},
                 {"tipo_material": "CORPO_TAMPA", "material": "A105"},
                 {"tipo_material": "PARAFUSOS", "material": "ASTM A193 B7"},
                 {"tipo_material": "PORCAS", "material": "ASTM A194 2H"},
             ],
-            "vedacoes": [{vedacao_key: vedacao_val}],
         }
 
     def _post(self, payload):
@@ -1704,20 +1745,15 @@ class VedacaoNbrClasseRuleTest(EspecialMixin, TestCase):
             content_type="application/json",
         )
 
-    def test_vedacao_junta_invalida_rejeitada(self):
-        resp = self._post(self._payload("vedacao_junta", "JUNTA ESPIRALADA"))
+    def test_junta_invalida_rejeitada(self):
+        resp = self._post(self._payload("JUNTA ESPIRALADA"))
         self.assertEqual(resp.status_code, 400, resp.content)
-        self.assertIn("vedacoes", resp.json()["errors"])
+        self.assertIn("materiais", resp.json()["errors"])
 
-    def test_vedacao_junta_valida_aceita(self):
-        resp = self._post(self._payload("vedacao_junta", "PRESSURE SEAL"))
+    def test_junta_valida_aceita(self):
+        resp = self._post(self._payload("PRESSURE SEAL"))
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertTrue(resp.json()["success"])
-
-    def test_vedacao_corpo_tampa_legado_continua_funcionando(self):
-        resp = self._post(self._payload("vedacao_corpo_tampa", "JUNTA ESPIRALADA"))
-        self.assertEqual(resp.status_code, 400, resp.content)
-        self.assertIn("vedacoes", resp.json()["errors"])
 
 
 class NbrParafusoPorcaPorCorpoRuleTest(EspecialMixin, TestCase):
@@ -3682,23 +3718,103 @@ class Api594EscopoTest(EspecialMixin, TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("diametro", resp.json()["errors"])
 
-    # ── vedacao: nao pode ser Castelo Soldado nem Pressure Seal ──
-    def test_castelo_soldado_rejeitado(self):
-        resp = self._post(vedacoes=[{"vedacao_junta": "CASTELO SOLDADO"}])
+    # ── categoria da junta (Materiais -> JUNTA): so' Tipo B (5.1.14, bolted cover) nao
+    # pode ser Castelo Soldado nem Pressure Seal. Tipo A nao tem esse requisito no escopo.
+    def test_castelo_soldado_rejeitado_tipo_b(self):
+        resp = self._post(categoria_594="TIPO B", materiais=[{"tipo_material": "JUNTA", "material": "CASTELO SOLDADO"}])
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("vedacoes", resp.json()["errors"])
+        self.assertIn("materiais", resp.json()["errors"])
 
-    def test_pressure_seal_rejeitado(self):
-        resp = self._post(vedacoes=[{"vedacao_junta": "PRESSURE SEAL"}])
+    def test_pressure_seal_rejeitado_tipo_b(self):
+        resp = self._post(categoria_594="TIPO B", materiais=[{"tipo_material": "JUNTA", "material": "PRESSURE SEAL"}])
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("vedacoes", resp.json()["errors"])
+        self.assertIn("materiais", resp.json()["errors"])
 
-    def test_junta_espiralada_aceita(self):
-        resp = self._post(vedacoes=[{"vedacao_junta": "JUNTA ESPIRALADA"}])
+    def test_junta_espiralada_aceita_tipo_b(self):
+        resp = self._post(categoria_594="TIPO B", materiais=[{"tipo_material": "JUNTA", "material": "JUNTA ESPIRALADA"}])
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_castelo_soldado_aceito_tipo_a(self):
+        """Tipo A (wafer/lug/duplo-flangeado) nao tem bolted cover no escopo — 5.1.14 e'
+        exclusivo do Tipo B, entao a restricao de junta nao se aplica aqui."""
+        resp = self._post(categoria_594="TIPO A", tipo_extremidade="Wafer",
+                           materiais=[{"tipo_material": "JUNTA", "material": "CASTELO SOLDADO"}])
         self.assertEqual(resp.status_code, 200, resp.content)
 
     def test_outra_norma_nao_restringe(self):
         resp = self._post(norma="BS 1868", diametro='1"')
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    # ── categoria_594 (Tipo A/Tipo B, 5.1.3) ──
+    def test_tipo_a_butt_welding_rejeitado(self):
+        """5.1.3: Tipo A e' wafer/lug/duplo-flangeado — Butt-Welding so' existe no Tipo B."""
+        resp = self._post(categoria_594="TIPO A", tipo_extremidade="BUTT-WELDING 40")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("tipo_extremidade", resp.json()["errors"])
+
+    def test_tipo_a_wafer_aceito(self):
+        resp = self._post(categoria_594="TIPO A", tipo_extremidade="Wafer")
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_tipo_b_wafer_rejeitado(self):
+        """5.1.3: Tipo B e' bolted cover, flange ou butt-welding — nao cobre Wafer/Lug."""
+        resp = self._post(categoria_594="TIPO B", tipo_extremidade="Wafer")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("tipo_extremidade", resp.json()["errors"])
+
+    def test_tipo_b_lug_rejeitado(self):
+        resp = self._post(categoria_594="TIPO B", tipo_extremidade="LUG")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("tipo_extremidade", resp.json()["errors"])
+
+    def test_tipo_b_flange_aceito(self):
+        resp = self._post(categoria_594="TIPO B", tipo_extremidade="FLANGE RF")
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_tipo_b_butt_welding_aceito(self):
+        resp = self._post(categoria_594="TIPO B", tipo_extremidade="BUTT-WELDING 40")
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    # ── teto por classe/tipo (Secao 1) ──
+    def test_tipo_a_classe150_flange_48_aceito(self):
+        """Tipo A classe 150/300: DN 50-1200/NPS 2-48 (Secao 1), independente da
+        extremidade ser wafer/lug/flange."""
+        resp = self._post(categoria_594="TIPO A", classe="150", tipo_extremidade="FLANGE RF", diametro='48"')
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_tipo_a_classe900_acima_24_rejeitado(self):
+        """Tipo A classe 900/1500: DN 50-600/NPS 2-24."""
+        resp = self._post(categoria_594="TIPO A", classe="900", tipo_extremidade="Wafer", diametro='26"')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("diametro", resp.json()["errors"])
+
+    def test_tipo_b_classe150_flange_24_aceito(self):
+        """Tipo B classe 150-1500: DN 50-600/NPS 2-24, mesmo teto pra Flange ou
+        Butt-Welding (a Secao 1 nao diferencia dimensao por extremidade no Tipo B)."""
+        resp = self._post(categoria_594="TIPO B", classe="150", tipo_extremidade="FLANGE RF", diametro='24"')
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_tipo_b_classe150_flange_acima_24_rejeitado(self):
+        """Diferente do Tipo A (que aceita ate' 48" na classe 150) — Tipo B para' em 24"
+        mesmo com extremidade Flange."""
+        resp = self._post(categoria_594="TIPO B", classe="150", tipo_extremidade="FLANGE RF", diametro='26"')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("diametro", resp.json()["errors"])
+
+    def test_tipo_b_classe2500_12_aceito(self):
+        resp = self._post(categoria_594="TIPO B", classe="2500", tipo_extremidade="FLANGE RF", diametro='12"')
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_tipo_b_classe2500_acima_12_rejeitado(self):
+        resp = self._post(categoria_594="TIPO B", classe="2500", tipo_extremidade="FLANGE RF", diametro='14"')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("diametro", resp.json()["errors"])
+
+    def test_sem_categoria_mantem_comportamento_legado(self):
+        """categoria_594 em branco (dado legado): extremidade aceita as 4 opcoes e o
+        teto usa a coluna B (Butt-Welding) ou a mais permissiva — mesmo comportamento
+        de antes do campo existir."""
+        resp = self._post(classe="150", tipo_extremidade="Wafer", diametro='48"')
         self.assertEqual(resp.status_code, 200, resp.content)
 
 
@@ -4332,8 +4448,11 @@ class BorboletaCategoriaBRuleTest(EspecialMixin, TestCase):
 
 
 class MssSp67EscopoTest(EspecialMixin, TestCase):
-    """MSS SP-67 1.3: diametro 1 1/2"-72" (modelo nao tem opcao acima de 60", so' o piso
-    precisa de trava). 3.1-3.3 + 4.3: flange so' ate' Classe 150 -> classe 125/150/PMT."""
+    """MSS SP-67: diametro em lista fechada (decisao de negocio 2026-07-21) - 1 1/2", 2",
+    2 1/2", 3", 4", 5", 6", 8", 10", 12", 14", 16", 18", 20", 24", 30", 36", 42", 48",
+    54", 60", 64", 66", 72". 5"/64"/66"/72" nao existem em DIAMETROS_POR_TIPO, injetados
+    so' no frontend p/ essa norma. 3.1-3.3 + 4.3: flange so' ate' Classe 150 -> classe
+    125/150/PMT."""
 
     def _post(self, **kw):
         p = {
@@ -4363,8 +4482,21 @@ class MssSp67EscopoTest(EspecialMixin, TestCase):
         self.assertEqual(self._post(diametro='1 1/2"').status_code, 200)
 
     def test_diametro_60_aceito(self):
-        """Teto real da norma e' 72"; o modelo nao tem opcao acima de 60"."""
         self.assertEqual(self._post(diametro='60"').status_code, 200)
+
+    def test_diametro_72_aceito(self):
+        """Teto real da norma; fora de DIAMETROS_POR_TIPO, so' aceito por essa norma."""
+        self.assertEqual(self._post(diametro='72"').status_code, 200)
+
+    def test_diametro_5_aceito(self):
+        """Fora de DIAMETROS_POR_TIPO, so' aceito por essa norma."""
+        self.assertEqual(self._post(diametro='5"').status_code, 200)
+
+    def test_diametro_22_rejeitado(self):
+        """22" existe em DIAMETROS_POR_TIPO mas nao entra na lista fechada da norma."""
+        resp = self._post(diametro='22"')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("diametro", resp.json()["errors"])
 
     def test_classe_125_aceita(self):
         self.assertEqual(self._post(classe="125").status_code, 200)
