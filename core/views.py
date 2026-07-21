@@ -4,6 +4,7 @@ import io
 import logging
 import threading
 import zlib
+from contextlib import contextmanager
 from fractions import Fraction
 
 
@@ -146,19 +147,36 @@ def gerar_codigo(tipo_valvula):
     return f"{prefixo}{max_num + 1:06d}"
 
 
+@contextmanager
 def _lock_tipo_valvula(tipo_valvula):
-    """Advisory lock (Postgres) por tipo de válvula. Deve ser chamado dentro de uma
-    transação: serializa dup-check + gerar_codigo + save entre requests concorrentes,
-    evitando válvulas duplicadas (TOCTOU) e colisão de código (unique). Lock liberado
-    no commit/rollback da transação. Chave é determinística entre workers (crc32).
+    """Trava por tipo de válvula. Serializa dup-check + gerar_codigo + save entre
+    requests concorrentes, evitando válvulas duplicadas (TOCTOU) e colisão de
+    código (unique). Chave determinística entre workers (crc32). Usar como
+    context manager dentro de uma transação:
+        with transaction.atomic(), _lock_tipo_valvula(tipo):
+            ...
 
-    Só funciona em PostgreSQL. Em outros backends (ex.: SQLite nos testes) vira no-op:
-    não há concorrência real ali, e a função pg_advisory_xact_lock não existe."""
-    if connection.vendor != "postgresql":
-        return
-    key = zlib.crc32(f"valvula_criar:{tipo_valvula}".encode())
-    with connection.cursor() as cur:
-        cur.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+    Postgres: advisory lock transacional (pg_advisory_xact_lock) — libera sozinho
+    no commit/rollback, sem precisar de finally aqui.
+    MySQL: named lock (GET_LOCK/RELEASE_LOCK) — é por sessão, não por transação,
+    então libera explicitamente no finally (cobre commit e rollback/exceção).
+    Outros backends (ex.: SQLite nos testes): no-op, sem concorrência real ali."""
+    if connection.vendor == "postgresql":
+        key = zlib.crc32(f"valvula_criar:{tipo_valvula}".encode())
+        with connection.cursor() as cur:
+            cur.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+        yield
+    elif connection.vendor == "mysql":
+        nome_lock = f"valvula_criar:{tipo_valvula}"
+        with connection.cursor() as cur:
+            cur.execute("SELECT GET_LOCK(%s, 10)", [nome_lock])
+        try:
+            yield
+        finally:
+            with connection.cursor() as cur:
+                cur.execute("SELECT RELEASE_LOCK(%s)", [nome_lock])
+    else:
+        yield
 
 
 # ── Página principal (single-page) ──────────────────────────────────────────
@@ -3161,12 +3179,10 @@ def valvula_criar(request):
         return erro
 
     # Seção crítica: dup-check + geração de código + save serializados por tipo via
-    # advisory lock, dentro de uma transação. Sem isso, 2+ requests concorrentes passam
-    # juntos no exists() (TOCTOU -> válvulas duplicadas) e geram o mesmo código
-    # (colisão no unique -> IntegrityError/500). O lock libera no commit da transação.
-    with transaction.atomic():
-        _lock_tipo_valvula(tipo_valvula)
-
+    # lock (advisory no Postgres, named lock no MySQL), dentro de uma transação. Sem
+    # isso, 2+ requests concorrentes passam juntos no exists() (TOCTOU -> válvulas
+    # duplicadas) e geram o mesmo código (colisão no unique -> IntegrityError/500).
+    with transaction.atomic(), _lock_tipo_valvula(tipo_valvula):
         duplicata = _encontrar_duplicata(tipo_valvula, data)
         if duplicata:
             # Registra a tentativa para estatísticas
