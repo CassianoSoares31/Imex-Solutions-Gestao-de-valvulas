@@ -31,6 +31,11 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ["*"]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://sistema.imexsolutions.com.br',
+    'https://www.sistema.imexsolutions.com.br',
+]
+
 
 # Application definition
 
