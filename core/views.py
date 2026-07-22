@@ -28,6 +28,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.conf import settings
+from django.core.cache import cache
+import jwt as pyjwt
 import os
 import zoneinfo
 from functools import wraps
@@ -209,6 +211,61 @@ def login_api(request):
 
     login(request, user)
     return JsonResponse({"success": True, "nome": user.nome, "nivel_permissao": user.nivel_permissao})
+
+
+def sso_login(request):
+    """Login automatico vindo do sistema maior (TypeScript/React) via JWT.
+
+    Token = JWT HS256 padrao assinado com SSO_SHARED_SECRET (nao a SECRET_KEY do
+    Django — segredo proprio, compartilhado so com o sistema que gera o link).
+    Claims esperadas: email, nome (opcional), exp (curto, ex. 60s), jti (unico por
+    link — o sistema de origem gera, ex. crypto.randomUUID()). `jti` e' marcado no
+    cache no primeiro uso p/ um link antigo/reaproveitado nao logar de novo.
+    Cria o usuario automaticamente (COMUM, ja confirmado) se o email ainda nao existir.
+
+    Exemplo de emissao em TypeScript (lib "jsonwebtoken"):
+        jwt.sign({ email, nome, jti: crypto.randomUUID() }, SSO_SHARED_SECRET,
+                 { algorithm: "HS256", expiresIn: "60s" })
+    """
+    token = request.GET.get("token", "")
+    if not token or not settings.SSO_SHARED_SECRET:
+        return HttpResponse("Link de acesso invalido.", status=400)
+
+    try:
+        payload = pyjwt.decode(token, settings.SSO_SHARED_SECRET, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
+        return HttpResponse("Link de acesso expirado. Peca um novo link no sistema de origem.", status=400)
+    except pyjwt.InvalidTokenError:
+        return HttpResponse("Link de acesso invalido.", status=400)
+
+    jti = payload.get("jti")
+    if not jti:
+        return HttpResponse("Link de acesso invalido.", status=400)
+
+    cache_key = f"sso_token_usado:{jti}"
+    if not cache.add(cache_key, True, timeout=120):
+        return HttpResponse("Link de acesso ja foi usado. Peca um novo link no sistema de origem.", status=400)
+
+    email = (payload.get("email") or "").strip().lower()
+    if not email or not email.endswith("@imexsolutions.com.br"):
+        return HttpResponse("Link de acesso invalido.", status=400)
+
+    nome = (payload.get("nome") or "").strip() or email.split("@")[0]
+
+    usuario = Tb_Usuario.objects.filter(email=email).first()
+    if usuario is None:
+        usuario = Tb_Usuario.objects.create_user(
+            email=email,
+            nome=nome,
+            password=None,
+            confirmado=True,
+        )
+    elif not usuario.confirmado:
+        usuario.confirmado = True
+        usuario.save(update_fields=["confirmado"])
+
+    login(request, usuario, backend="django.contrib.auth.backends.ModelBackend")
+    return redirect("core:index")
 
 
 logger = logging.getLogger(__name__)

@@ -187,3 +187,7 @@ DEFAULT_FROM_EMAIL = f'Imex Solutions <{os.environ.get("EMAIL_HOST_USER", "norep
 
 # URL base do sistema (usada no link do email)
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# SSO — segredo compartilhado com o sistema maior que linka pra ca.
+# Token assinado (django.core.signing) usando essa chave, NUNCA a SECRET_KEY do Django.
+SSO_SHARED_SECRET = os.environ.get('SSO_SHARED_SECRET', '')
