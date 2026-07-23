@@ -4158,9 +4158,9 @@ def _build_folha_grupos(valvula, materiais, vedacoes, componentes, rate_api6d, L
     # (ex.: "API 6D - IOGP AS-562 - QSL3/3G").
     if valvula.norma:
         _norma_partes = [valvula.norma]
-        if "iogp" in campos_visiveis and valvula.iogp:
+        if "iogp" in campos_visiveis and valvula.iogp and valvula.iogp != "N/A":
             _norma_partes.append(valvula.iogp)
-        if valvula.qsl:
+        if valvula.qsl and valvula.qsl != "N/A":
             _norma_partes.append(valvula.qsl)
         corpo.append((L["lbl_standard"], " - ".join(_norma_partes)))
     if "flange_acoplamento" in campos_visiveis and valvula.flange_acoplamento:
