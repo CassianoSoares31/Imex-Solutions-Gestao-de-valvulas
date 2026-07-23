@@ -1926,11 +1926,14 @@ class ParafusoPorcaCompatSemNbrTest(EspecialMixin, TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("materiais", resp.json()["errors"])
 
-    def test_padrao_fabricante_aceita_padrao_ou_na(self):
-        for porca in ("PADRÃO FABRICANTE", "N/A"):
-            with self.subTest(porca=porca):
-                resp = self._post(parafuso="PADRÃO FABRICANTE", porca=porca)
-                self.assertEqual(resp.status_code, 200, porca)
+    def test_padrao_fabricante_aceita_so_padrao(self):
+        resp = self._post(parafuso="PADRÃO FABRICANTE", porca="PADRÃO FABRICANTE")
+        self.assertEqual(resp.status_code, 200, resp.content)
+
+    def test_padrao_fabricante_com_na_rejeitado(self):
+        resp = self._post(parafuso="PADRÃO FABRICANTE", porca="N/A")
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("materiais", resp.json()["errors"])
 
     def test_zeron_exige_zeron(self):
         resp = self._post(parafuso="ZERON 100 FG", porca="UNS S32760")

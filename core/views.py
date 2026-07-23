@@ -2226,6 +2226,13 @@ def _validar_regras_valvula(tipo_valvula, data):
             if data.get("revestimento") and data.get("revestimento") != "N/A":
                 return JsonResponse({"success": False, "errors": {"revestimento": "Para NBR 15827 com corpo inox austenítico, o revestimento deve ser N/A"}}, status=400)
 
+    # Regra: parafuso N/A → porca também deve ser N/A (independe de NBR).
+    materiais = data.get("materiais", [])
+    mat_paraf = next((m.get("material") for m in materiais if m.get("tipo_material") == "PARAFUSOS"), None)
+    mat_porca = next((m.get("material") for m in materiais if m.get("tipo_material") == "PORCAS"), None)
+    if mat_paraf == "N/A" and mat_porca and mat_porca != "N/A":
+        return JsonResponse({"success": False, "errors": {"materiais": "Se o parafuso for N/A, a porca também deve ser N/A"}}, status=400)
+
     # Regra: sem NBR 15827 → parafuso/porca ainda seguem par compatível (fora da NBR o
     # corpo não dita o par, mas parafuso e porca continuam tendo que combinar entre si).
     # Com NBR ativa, as regras de corpo acima já restringem o par.
@@ -2244,7 +2251,7 @@ def _validar_regras_valvula(tipo_valvula, data):
         "ZERON 100 FG": {"ZERON 100 FG"},
         "UNS S32760": {"UNS S32760"},
         "UNS S32550": {"UNS S32550"},
-        "PADRÃO FABRICANTE": {"PADRÃO FABRICANTE", "N/A"},
+        "PADRÃO FABRICANTE": {"PADRÃO FABRICANTE"},
         "N/A": {"N/A"},
     }
     if not data.get("nbr"):
