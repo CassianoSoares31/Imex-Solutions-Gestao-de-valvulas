@@ -117,7 +117,7 @@
         <td class="codigo">{{ valvula.codigo }}</td>
     </tr>
 
-    <tr>
+    <tr style="display:none">
         <td class="codigo-label" colspan="3">CÓDIGO UNIVERSAL (UNIVERSAL CODE)</td>
         <td class="codigo">{% for linha in codigo_universal_linhas %}{{ linha }}{% if not forloop.last %}<br>{% endif %}{% empty %}{{ codigo_universal }}{% endfor %}</td>
     </tr>

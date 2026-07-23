@@ -933,7 +933,7 @@ def index(request):
         }
         for item in por_tipo
     ]
-    valvulas = Valvula.objects.prefetch_related("projetos").order_by("-criado_em")[:50]
+    valvulas = Valvula.objects.select_related("criado_por").prefetch_related("projetos").order_by("-criado_em")[:50]
     context = {
         "total_valvulas": total_valvulas,
         "total_materiais": total_materiais,
@@ -976,13 +976,14 @@ def _serializar_valvula_resumo(v):
         "classe": v.classe,
         "projetos": [{"id": p.id_projeto, "nome": p.nome} for p in v.projetos.all()],
         "criado_em": v.criado_em.astimezone(zone).strftime("%d/%m/%Y %H:%M") if v.criado_em else "",
+        "criado_por": v.criado_por.nome if v.criado_por_id else "",
     }
 
 
 @require_GET
 def valvula_lista_api(request):
     """Retorna lista paginada de válvulas em JSON para a tabela."""
-    queryset = Valvula.objects.prefetch_related("projetos").all()
+    queryset = Valvula.objects.select_related("criado_por").prefetch_related("projetos").all()
     codigo = request.GET.get("codigo", "").strip()
     tipo = request.GET.get("tipo_valvula", "").strip()
     projeto = request.GET.get("projeto", "").strip()
@@ -1010,7 +1011,7 @@ def valvula_lista_api(request):
 @require_GET
 def pesquisa_avancada_api(request):
     """Pesquisa avançada: filtra válvulas pelos campos preenchidos (AND lógico)."""
-    queryset = Valvula.objects.prefetch_related("projetos").all()
+    queryset = Valvula.objects.select_related("criado_por").prefetch_related("projetos").all()
 
     # Mapeamento campo -> tipo de filtro
     TEXT_FIELDS_EXACT = [
@@ -5582,6 +5583,7 @@ def _gerar_pdf_excel(valvula, materiais, vedacoes, componentes):
         cu_val_cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cu_val_cell.border = thin_border
         xrowdim(3).height = max(30, 26 * len(_cu_linhas_xlsx))
+        xrowdim(3).hidden = True  # oculto, nao removido (mesmo dado, so escondido)
 
         current_row = 4
 

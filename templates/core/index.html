@@ -182,6 +182,7 @@
                 <th>Classe</th>
                 <th class="dormant">Projeto</th>
                 <th>Criado em</th>
+                <th>Criado por</th>
                 <th class="text-center">Ações</th>
               </tr>
             </thead>
@@ -196,6 +197,7 @@
                 <td>{{ v.classe }}</td>
                 <td class="dormant">{% if v.projetos.count %}<span class="badge bg-secondary-subtle text-secondary-emphasis" title="{% for p in v.projetos.all %}{{ p.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}">{{ v.projetos.count }} projeto{{ v.projetos.count|pluralize:"s" }} cadastrado{{ v.projetos.count|pluralize:"s" }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 <td>{{ v.criado_em|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.criado_por.nome|default:"—" }}</td>
                 <td class="text-center">
                   <div class="action-toolbar">
                     <button class="btn btn-outline-primary" onclick="verDetalhe({{ v.id_valvula }})" title="Ver detalhes">
@@ -222,7 +224,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="9">
+                <td colspan="10">
                   <div class="empty-state">
                     <i class="bi bi-inbox"></i>
                     <p>Nenhuma válvula cadastrada</p>
@@ -334,7 +336,6 @@
                 <label class="form-label">QSL</label>
                 <select id="id_qsl" name="qsl" class="form-select">
                   <option value="">Selecione...</option>
-                  <option value="N/A">N/A</option>
                   <option value="QSL2">QSL2</option>
                   <option value="QSL3/3G">QSL3/3G</option>
                   <option value="QSL4/4G">QSL4/4G</option>
@@ -4959,7 +4960,7 @@ async function executarBusca(url, params, pagina = 1, mostrarSkeleton = true) {
     renderTabela(data);
   } catch (err) {
     console.error('Erro na pesquisa:', err);
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state text-danger"><i class="bi bi-exclamation-triangle"></i><p>Erro ao carregar</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state text-danger"><i class="bi bi-exclamation-triangle"></i><p>Erro ao carregar</p></div></td></tr>';
   }
 }
 
@@ -4977,6 +4978,7 @@ function _linhaValvula(v) {
         : `<span class="badge bg-secondary-subtle text-secondary-emphasis" title="${v.projetos.map(p => escapeHtml(p.nome)).join(', ')}">${v.projetos.length} projeto${v.projetos.length !== 1 ? 's' : ''} cadastrado${v.projetos.length !== 1 ? 's' : ''}</span>`
       }</td>
       <td>${v.criado_em || ''}</td>
+      <td>${v.criado_por ? escapeHtml(v.criado_por) : '—'}</td>
       <td class="text-center">
         <div class="action-toolbar">
           <button class="btn btn-outline-primary" onclick="verDetalhe(${v.id})" title="Ver detalhes">
@@ -5012,7 +5014,7 @@ function renderTabela(data) {
   _paginaAtual = data.page || 1;
 
   if (total === 0) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><i class="bi bi-inbox"></i><p>Nenhuma válvula encontrada</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="bi bi-inbox"></i><p>Nenhuma válvula encontrada</p></div></td></tr>';
     info.textContent = '';
     renderControlesPaginacao(0);
     const selAllVazio = document.getElementById('sel-all');
