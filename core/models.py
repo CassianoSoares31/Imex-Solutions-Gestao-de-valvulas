@@ -319,6 +319,7 @@ class Valvula(models.Model):
         ("125-250 μin ESPIRAL", "125-250 μin Espiral"),
         ("125-250 μin CONCÊNTRICA", "125-250 μin Concêntrica"),
         ("LISO (125 μin)", "Liso (125 μin)"),
+        ("63 μin", "63 μin"),
         ("N/A", "N/A"),
     ]
 
@@ -1778,16 +1779,16 @@ class Valvula(models.Model):
 
     # Características Elétricas (marcação Ex por subcategoria de instrumentação).
     # 5 partes independentes; juntas formam ex.: "Ex db IIC T6 Gb".
-    CE_EX = [("Ex", "Ex")]
-    CE_PROTECAO = [(x, x) for x in ["db", "db eb", "eb", "ec", "nA", "tb", "tc", "pxb", "pyb", "pzc", "i"]]
-    CE_GRUPO = [(x, x) for x in ["I", "IIA", "IIB", "IIC", "IIIA", "IIIB", "IIIC"]]
-    CE_TEMP = [(x, x) for x in ["T1", "T2", "T3", "T4", "T5", "T6"]]
-    CE_EPL = [(x, x) for x in ["Ga", "Gb", "Gc"]]
+    CE_EX = [("-", "-"), ("Ex", "Ex")]
+    CE_PROTECAO = [("-", "-")] + [(x, x) for x in ["db", "db eb", "eb", "ec", "nA", "tb", "tc", "pxb", "pyb", "pzc", "i"]]
+    CE_GRUPO = [("-", "-")] + [(x, x) for x in ["I", "IIA", "IIB", "IIC", "IIIA", "IIIB", "IIIC"]]
+    CE_TEMP = [("-", "-")] + [(x, x) for x in ["T1", "T2", "T3", "T4", "T5", "T6"]]
+    CE_EPL = [("-", "-")] + [(x, x) for x in ["Ga", "Gb", "Gc"]]
 
     # Elétrica por subcategoria de instrumentação: tensão / corrente / potência
-    TENSAO_ELET = [(x, x) for x in ["12 VDC", "12 VAC", "24 VDC", "24 VAC", "127 VAC", "120 VDC", "220 VAC"]]
-    CORRENTE_ELET = [(f"{n} A", f"{n} A") for n in range(2, 51)]
-    POTENCIA_ELET = [(f"{n} W", f"{n} W") for n in range(2, 51)]
+    TENSAO_ELET = [("-", "-")] + [(x, x) for x in ["12 VDC", "12 VAC", "24 VDC", "24 VAC", "127 VAC", "120 VDC", "220 VAC"]]
+    CORRENTE_ELET = [("-", "-")] + [(f"{n} A", f"{n} A") for n in range(2, 51)]
+    POTENCIA_ELET = [("-", "-")] + [(f"{n} W", f"{n} W") for n in range(2, 51)]
 
     FILTRO = [
         ("SIM, COM MANÔMETROS", "Sim, com Manômetros"),
@@ -2371,7 +2372,7 @@ class Valvula(models.Model):
     condicao_pintura_atuador = models.CharField(max_length=40, choices=CONDICAO_PINTURA, blank=True, null=True, verbose_name="Condição de Pintura do Atuador")
     construcao_corpo = models.CharField(max_length=50, choices=CONSTRUCAO_CORPO_ESFERA, blank=True, null=True, verbose_name="Construção do Corpo")
     dib = models.CharField(max_length=10, choices=DIB, blank=True, null=True, verbose_name="DIB")
-    valvula_alivio = models.BooleanField(default=False, verbose_name="Válvula de Alívio / Dreno")
+    valvula_alivio = models.BooleanField(default=False, verbose_name="Válvula de Alívio")
     dispositivo_antiestatico = models.BooleanField(default=False, verbose_name="Dispositivo Antiestático")
     tipo_passagem = models.CharField(max_length=20, choices=TIPO_PASSAGEM, blank=True, null=True, verbose_name="Tipo de Passagem")
     uso_geral = models.CharField(max_length=50, blank=True, null=True, verbose_name="Uso Geral / Testada a Fogo")

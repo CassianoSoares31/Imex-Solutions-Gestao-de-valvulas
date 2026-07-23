@@ -525,7 +525,7 @@
                   <select id="id_posicionador" name="posicionador" class="form-select"></select>
                 </div>
                 <div class="col-md-3 field-group" id="div-ip_posicionador">
-                  <label class="form-label">Grau de Proteção</label>
+                  <label class="form-label">Grau de Proteção (IP)</label>
                   <select id="id_ip_posicionador" name="ip_posicionador" class="form-select"></select>
                 </div>
                 <div class="col-12"><small class="text-muted fst-italic">Características Elétricas</small></div>
@@ -653,7 +653,7 @@
             </div>
             <div class="row g-3 mb-3">
               <div class="col-md-3 field-group" id="div-valvula_alivio">
-                <label class="form-label">Válvula de Alívio / Dreno</label>
+                <label class="form-label">Válvula de Alívio</label>
                 <div class="form-check form-switch mt-1">
                   <input type="checkbox" id="id_valvula_alivio" name="valvula_alivio" class="form-check-input" value="true">
                 </div>
@@ -3607,11 +3607,16 @@ function aplicarRegraRanhuraNA(formElement = document) {
   if (!ranhuraSelect) return;
   // Acabamento da face do flange só existe em conexão Flange/Wafer/Lug — qualquer
   // outra (Butt-Welding, Socket-Welding, Rosca, Niple, Gray Loc Hub) força N/A.
+  // Flange RTJ (FJA) força 63 μin.
   const extUpper = ext.toUpperCase();
   const permiteRanhura = extUpper.startsWith('FLANGE') || extUpper === 'WAFER' || extUpper === 'LUG';
   const forcar = ext !== '' && !permiteRanhura;
   if (forcar) {
     ranhuraSelect.value = 'N/A';
+    ranhuraSelect.disabled = true;
+    ranhuraSelect.classList.add('bg-info-subtle');
+  } else if (extUpper === 'FLANGE RTJ (FJA)') {
+    ranhuraSelect.value = '63 μin';
     ranhuraSelect.disabled = true;
     ranhuraSelect.classList.add('bg-info-subtle');
   } else {
@@ -3859,20 +3864,20 @@ const CE_PARTES = ['ex','protecao','grupo','temp','epl'];
 const CAMPOS_CE = [];
 CE_SUBS.forEach(s => CE_PARTES.forEach(p => CAMPOS_CE.push(p + '_' + s)));
 const CE_OPCOES = {
-  ex: ['Ex'],
-  protecao: ['db','db eb','eb','ec','nA','tb','tc','pxb','pyb','pzc','i'],
-  grupo: ['I','IIA','IIB','IIC','IIIA','IIIB','IIIC'],
-  temp: ['T1','T2','T3','T4','T5','T6'],
-  epl: ['Ga','Gb','Gc'],
+  ex: ['-','Ex'],
+  protecao: ['-','db','db eb','eb','ec','nA','tb','tc','pxb','pyb','pzc','i'],
+  grupo: ['-','I','IIA','IIB','IIC','IIIA','IIIB','IIIC'],
+  temp: ['-','T1','T2','T3','T4','T5','T6'],
+  epl: ['-','Ga','Gb','Gc'],
 };
 // Elétrica por subcategoria: tensão / corrente / potência
 const ELET_PARTES = ['tensao','corrente','potencia'];
 const CAMPOS_ELET = [];
 CE_SUBS.forEach(s => ELET_PARTES.forEach(p => CAMPOS_ELET.push(p + '_' + s)));
 const ELET_OPCOES = {
-  tensao: ['12 VDC','12 VAC','24 VDC','24 VAC','127 VAC','120 VDC','220 VAC'],
-  corrente: Array.from({length:49}, (_,i) => (i+2) + ' A'),
-  potencia: Array.from({length:49}, (_,i) => (i+2) + ' W'),
+  tensao: ['-','12 VDC','12 VAC','24 VDC','24 VAC','127 VAC','120 VDC','220 VAC'],
+  corrente: ['-'].concat(Array.from({length:49}, (_,i) => (i+2) + ' A')),
+  potencia: ['-'].concat(Array.from({length:49}, (_,i) => (i+2) + ' W')),
 };
 function _ceEletSuf(suf) { return CE_PARTES.map(p => p + '_' + suf).concat(ELET_PARTES.map(p => p + '_' + suf)); }
 // Posicionador + gerais: só existem em Função = Controle.

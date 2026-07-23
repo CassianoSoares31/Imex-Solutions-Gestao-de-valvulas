@@ -1629,11 +1629,13 @@ def _aplicar_regras_automaticas(tipo_valvula, data):
     # Regra: acabamento da face do flange (tipo_ranhura) só existe em conexão
     # Flange/Wafer/Lug — qualquer outra (Butt-Welding, Socket-Welding, Rosca,
     # Niple, Gray Loc Hub) força N/A. Só se aplica a tipos com campo "Conexão"
-    # (Borboleta não tem tipo_extremidade).
+    # (Borboleta não tem tipo_extremidade). Flange RTJ (FJA) força 63 μin.
     if "tipo_extremidade" in Valvula.CAMPOS_POR_TIPO.get(tipo_valvula, []):
         _ext = (data.get("tipo_extremidade") or "").upper()
         if _ext and not (_ext.startswith("FLANGE") or _ext in ("WAFER", "LUG")):
             data["tipo_ranhura"] = "N/A"
+        elif _ext == "FLANGE RTJ (FJA)":
+            data["tipo_ranhura"] = "63 μin"
 
     # Regra: norma de conexão (campo "Flange") derivada do tipo de extremidade.
     # Butt-Welding → ASME B16.25; Socket-Welding → ASME B16.11; Rosca NPT →
@@ -3446,6 +3448,8 @@ def valvula_preview(request):
         _ext = (data.get("tipo_extremidade") or "").upper()
         if _ext and not (_ext.startswith("FLANGE") or _ext in ("WAFER", "LUG")):
             data["tipo_ranhura"] = "N/A"
+        elif _ext == "FLANGE RTJ (FJA)":
+            data["tipo_ranhura"] = "63 μin"
 
     # Regra: norma de conexão (campo "Flange") derivada do tipo de extremidade.
     # Butt-Welding → ASME B16.25; Socket-Welding → ASME B16.11; Rosca NPT →
